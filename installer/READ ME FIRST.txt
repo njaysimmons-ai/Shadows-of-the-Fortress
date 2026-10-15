@@ -1,0 +1,25 @@
+LIVING NPCs for Erenshor
+=======================
+
+TO INSTALL
+  1. Unzip this whole folder anywhere (for example, your Desktop).
+  2. Double-click "Install Living NPCs.bat".
+  3. Answer the questions. It finds your Erenshor folder, installs BepInEx (the mod loader)
+     if you don't have it, installs the mod, and can set up AI chat.
+
+If Windows shows "Windows protected your PC", click "More info", then "Run anyway".
+The installer is a plain-text script; open Install-LivingNPCs.ps1 in Notepad to read it.
+
+TO UPDATE
+  Run the installer again from the new version's folder.
+
+TO UNINSTALL
+  Double-click "Uninstall Living NPCs.bat".
+
+IN GAME
+  /emotes     list emotes (/wave, /bow, /cheer, /hug, /dance, ...)
+  /ai         AI chat status. Target a sim or NPC and type to talk to them.
+  /p message  talk to your group      /w Name message   whisper a sim
+  Ctrl+F8     reload the dialogue files after editing them
+
+Your settings and all the dialogue files are in Erenshor\BepInEx\config\

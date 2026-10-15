@@ -6,3 +6,4 @@ obj/
 lib/
 *.dll
 !LivingNPCs/**/*.cs
+dist/

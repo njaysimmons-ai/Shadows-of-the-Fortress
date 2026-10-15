@@ -111,9 +111,19 @@ All the writing lives in one plain-text file you can edit and reload in game wit
 
 ## Install
 
-1. Install BepInEx 5 (x64) into your Erenshor folder and run the game once so it creates `BepInEx/plugins`.
-2. Put `LivingNPCs.dll` in `Erenshor/BepInEx/plugins/LivingNPCs/`.
-3. Launch the game. The mod writes its files to `Erenshor/BepInEx/config/`:
+Download the release zip, unzip it, and double-click **Install Living NPCs.bat**. The installer:
+
+1. finds Erenshor in any of your Steam libraries (or lets you pick the folder),
+2. installs BepInEx 5, the mod loader, if you don't already have it,
+3. installs or updates the mod, offering to refresh your dialogue files (old ones kept as `.bak`),
+4. optionally sets up AI chat: installs Ollama, picks a model to suit your graphics card
+   (16 GB+ gets `qwen2.5:14b`, 10 GB+ `llama3.1:8b`, otherwise `llama3.2:3b`) and downloads it,
+5. offers to launch the game.
+
+**Uninstall Living NPCs.bat** removes the mod, and optionally its settings and memories, and
+BepInEx if the installer was the one that added it.
+
+The mod writes its files to `Erenshor/BepInEx/config/`:
    - `njaysimmons.erenshor.livingnpcs.cfg`: settings (chatter frequency, radius, toggles)
    - `LivingNPCs/ai.txt`: how sims and NPCs are described to the AI, and the lore it knows
    - `LivingNPCs/life.txt`: actions, reactions, banter, memories and emotes
@@ -150,6 +160,7 @@ dotnet build -c Release -p:GameDir="C:\Program Files (x86)\Steam\steamapps\commo
 ```
 
 If `BepInEx/plugins` exists there, the build copies the DLL in for you.
+`installer/package.sh <Managed folder>` builds and zips the DLL with the installer into `dist/`.
 Game assemblies are referenced from your install and are never committed to this repo.
 
 ## How it works
