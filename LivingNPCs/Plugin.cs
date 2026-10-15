@@ -13,7 +13,7 @@ namespace LivingNPCs
     public class Plugin : BaseUnityPlugin
     {
         public const string Guid = "njaysimmons.erenshor.livingnpcs";
-        public const string Version = "0.3.0";
+        public const string Version = "0.3.1";
 
         internal static ManualLogSource Log;
         internal static DialogueBank Bank;
@@ -64,6 +64,7 @@ namespace LivingNPCs
         internal static ConfigEntry<bool> AiStopOllamaOnQuit;
         internal static ConfigEntry<float> AiTimeoutSeconds;
         internal static ConfigEntry<float> AiOverhearChance;
+        internal static ConfigEntry<float> AiNearbyRadius;
         internal static ConfigEntry<bool> EnableFriendships;
         internal static ConfigEntry<float> FriendshipSpeed;
         internal static ConfigEntry<float> FriendshipDailyCap;
@@ -115,7 +116,8 @@ namespace LivingNPCs
             AiAutoDownload = Config.Bind("AI Chat", "DownloadModelAutomatically", true, "Download the model on first use if it's missing.");
             AiOllamaPath = Config.Bind("AI Chat", "OllamaPath", "", "Full path to ollama.exe, if it isn't in the usual place.");
             AiStopOllamaOnQuit = Config.Bind("AI Chat", "StopOllamaOnQuit", true, "Close Ollama when you quit the game, if the mod started it.");
-            AiTimeoutSeconds = Config.Bind("AI Chat", "TimeoutSeconds", 40f, "Give up on a reply after this long.");
+            AiTimeoutSeconds = Config.Bind("AI Chat", "ReplyTimeoutSeconds", 120f, "Give up on a reply after this long.");
+            AiNearbyRadius = Config.Bind("AI Chat", "NearbyAnswerRadius", 6f, "If you talk without targeting anyone, the closest sim within this many metres answers. 0 turns it off.");
             AiOverhearChance = Config.Bind("AI Chat", "OverhearChance", 0.35f, "Chance (0-1) a nearby sim answers a question you ask out loud without naming anyone.");
 
             EnableFriendships = Config.Bind("Friendships", "Enabled", true, "Sims and NPCs build lasting friendships with each of your characters and remember what you've done and said together.");

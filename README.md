@@ -34,7 +34,7 @@ launches Ollama in the background if it isn't running, downloads the model the f
 It closes Ollama again when you quit.
 
 **How to talk:**
-- **Target a sim and type** (normal /say). They answer in their persona's voice, aware of their
+- **Target a sim and type** (normal /say), or just **stand next to a sim** and type. They answer in their persona's voice, aware of their
   mood, the zone, the time, and your shared history ("we wiped twice in Rottenfoot").
 - **Say a nearby sim's name** in a message and that sim answers.
 - **Ask a question out loud** and someone nearby might answer.
@@ -49,6 +49,12 @@ Typing quirks still apply: a lowercase chill sim stays lowercase, a hype sim sta
 
 **In game:** `/ai` shows status, `/ai off` and `/ai on` toggle it, `/ai model llama3.1:8b` switches model.
 On a strong graphics card, an 8B model (`llama3.1:8b`, `qwen2.5:7b`) gives noticeably better replies.
+
+**If sims don't seem to use the AI:** type `/ai`. It says whether it's connected and what the last
+problem was. `/ai test` sends a test message and shows the reply and how long it took. When you
+enter the world the mod also says whether AI chat is on, and if a reply fails it tells you why.
+It retries the connection every minute, so starting Ollama after the game is fine.
+Details are also in `Erenshor/BepInEx/LogOutput.log`.
 
 How characters are described to the AI, including a summary of Erenshor's lore drawn from the
 game itself, lives in `ai.txt`.

@@ -28,6 +28,9 @@ namespace LivingNPCs
         private static int inFlight;
 
         public static string BaseUrl => Plugin.AiUrl.Value.TrimEnd('/');
+
+        /// <summary>Why the last request or setup failed, in plain words, for /ai.</summary>
+        public static volatile string LastError = "";
         public static bool Busy => Volatile.Read(ref inFlight) > 0;
 
         /// <summary>Runs finished callbacks on the game thread. Call every frame.</summary>
@@ -95,7 +98,8 @@ namespace LivingNPCs
                 }
                 if (!ok)
                 {
-                    Post(status, "Living NPCs: AI chat is off because Ollama isn't running. Install it from ollama.com, then type /ai on.");
+                    LastError = "Ollama isn't running at " + BaseUrl + " (is it installed? see ollama.com)";
+                    Post(status, "Living NPCs: AI chat can't reach Ollama. It will keep retrying; type /ai for help.");
                     Post(() => ready(false));
                     return;
                 }
@@ -103,6 +107,7 @@ namespace LivingNPCs
                 {
                     if (!autoPull)
                     {
+                        LastError = "model '" + model + "' isn't downloaded";
                         Post(status, "Living NPCs: the AI model '" + model + "' isn't downloaded. Run: ollama pull " + model);
                         Post(() => ready(false));
                         return;
@@ -114,11 +119,25 @@ namespace LivingNPCs
                     }
                     catch (Exception e)
                     {
+                        LastError = "couldn't download model '" + model + "': " + e.Message;
                         Post(status, "Living NPCs: couldn't download the AI model: " + e.Message);
                         Post(() => ready(false));
                         return;
                     }
                 }
+                // Load the model into video memory now, so the first real reply isn't slow.
+                try
+                {
+                    Http("POST", "/api/generate", "{\"model\":" + Json.Quote(model) + ",\"prompt\":\"hi\",\"stream\":false,\"keep_alive\":\"30m\",\"options\":{\"num_predict\":1}}", 180 * 1000);
+                }
+                catch (Exception e)
+                {
+                    LastError = "the model failed to load: " + e.Message;
+                    Post(status, "Living NPCs: the AI model '" + model + "' failed to load: " + e.Message);
+                    Post(() => ready(false));
+                    return;
+                }
+                LastError = "";
                 Post(status, "Living NPCs: AI chat is ready (" + model + "). Talk to sims and NPCs!");
                 Post(() => ready(true));
             });
@@ -173,6 +192,8 @@ namespace LivingNPCs
             return false;
         }
 
+        private static string Truncate(string s, int max) => s == null ? "" : s.Length <= max ? s : s.Substring(0, max) + "...";
+
         /// <summary>Stops the Ollama server, but only if this mod started it.</summary>
         public static void StopIfWeStartedIt()
         {
@@ -204,7 +225,7 @@ namespace LivingNPCs
             }
             body.Append("]}");
             string payload = body.ToString();
-            int timeout = (int)(Plugin.AiTimeoutSeconds.Value * 1000);
+            int timeout = (int)(Math.Max(10f, Plugin.AiTimeoutSeconds.Value) * 1000);
 
             Interlocked.Increment(ref inFlight);
             ThreadPool.QueueUserWorkItem(_ =>
@@ -214,10 +235,21 @@ namespace LivingNPCs
                 {
                     string json = Http("POST", "/api/chat", payload, timeout);
                     reply = Json.Field(json, "content");
+                    if (reply == null) LastError = "Ollama answered with something unexpected: " + Truncate(Json.Field(json, "error") ?? json, 150);
+                }
+                catch (WebException e) when (e.Response is HttpWebResponse r)
+                {
+                    string detail = "";
+                    try { using (var sr = new StreamReader(r.GetResponseStream())) detail = Json.Field(sr.ReadToEnd(), "error") ?? ""; } catch { }
+                    LastError = "Ollama returned an error: " + (detail.Length > 0 ? detail : e.Message);
+                    Plugin.Log.LogWarning("AI chat failed: " + LastError);
                 }
                 catch (Exception e)
                 {
-                    Plugin.Log.LogWarning("AI chat failed: " + e.Message);
+                    LastError = e is WebException we && we.Status == WebExceptionStatus.Timeout
+                        ? "no reply within " + (timeout / 1000) + " seconds (raise ReplyTimeoutSeconds, or use a smaller model)"
+                        : e.Message;
+                    Plugin.Log.LogWarning("AI chat failed: " + LastError);
                 }
                 finally
                 {

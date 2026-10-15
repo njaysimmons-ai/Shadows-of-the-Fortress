@@ -34,15 +34,33 @@ namespace LivingNPCs
 
         public static bool Ready { get; private set; }
         private static bool preparing;
+        private static int attempts;
+        private static float nextRetry = 8f;
+        private static bool announced;
+        private static float lastFailureNotice = -999f;
 
         private void Start()
         {
-            if (Plugin.AiEnabled.Value) Scheduler.After(8f, () => Prepare(quiet: true));
         }
 
         private void Update()
         {
             Ollama.Pump();
+
+            // Keep trying to connect (Ollama may start after the game), and say how it went once you're in the world.
+            if (Plugin.AiEnabled.Value && !Ready && !preparing && Time.time >= nextRetry)
+            {
+                nextRetry = Time.time + 60f;
+                Prepare(quiet: true);
+            }
+            if (!announced && Plugin.AiEnabled.Value && WorldContext.PlayerReady && attempts > 0 && !preparing)
+            {
+                announced = true;
+                UpdateSocialLog.LogAdd(Ready
+                    ? "Living NPCs: AI chat is on (" + Plugin.AiModel.Value + "). Target a sim or NPC, or stand next to one, and type to talk."
+                    : "Living NPCs: AI chat isn't connected: " + Ollama.LastError + ". Type /ai for help.", Ready ? "#7FD1AE" : "yellow");
+            }
+
             if (Waiting.Count > 0 && Ready && !Ollama.Busy) Waiting.Dequeue()();
             if (Time.time >= nextSummaryCheck)
             {
@@ -60,17 +78,52 @@ namespace LivingNPCs
         {
             if (preparing) return;
             preparing = true;
+            attempts++;
             Ollama.Prepare(
                 message =>
                 {
                     Plugin.Log.LogInfo(message);
-                    if (!quiet || !message.Contains("isn't running")) UpdateSocialLog.LogAdd(message, "yellow");
+                    // Routine connection chatter stays in the log; downloads and explicit /ai requests show in chat.
+                    if (!quiet || message.Contains("downloading") || message.Contains("failed")) TryChat(message, "yellow");
                 },
                 ok =>
                 {
                     Ready = ok;
                     preparing = false;
+                    if (ok && attempts > 1 && announced) TryChat("Living NPCs: AI chat connected (" + Plugin.AiModel.Value + ").", "#7FD1AE");
                 });
+        }
+
+        /// <summary>Chat messages sent before the chat window exists (main menu) would be lost or throw.</summary>
+        private static void TryChat(string message, string color)
+        {
+            if (!WorldContext.PlayerReady) return;
+            try { UpdateSocialLog.LogAdd(message, color); }
+            catch (Exception) { }
+        }
+
+        /// <summary>Sends a fixed test prompt and prints the result, for /ai test.</summary>
+        public static void Test()
+        {
+            if (!Ready)
+            {
+                UpdateSocialLog.LogAdd("AI test: not connected. " + Ollama.LastError, "yellow");
+                Prepare(quiet: false);
+                return;
+            }
+            UpdateSocialLog.LogAdd("AI test: asking " + Plugin.AiModel.Value + "...", "yellow");
+            float started = Time.time;
+            var messages = new List<Ollama.Message>
+            {
+                new Ollama.Message("system", "You are a friendly adventurer in the fantasy game Erenshor. Reply with one short sentence."),
+                new Ollama.Message("user", "Hello! How are you today?"),
+            };
+            Ollama.Chat(messages, 40, reply =>
+            {
+                UpdateSocialLog.LogAdd(reply != null
+                    ? "AI test reply (" + (Time.time - started).ToString("0.0") + "s): " + reply
+                    : "AI test failed: " + Ollama.LastError, reply != null ? "#7FD1AE" : "yellow");
+            });
         }
 
         // ================================================================ deciding who answers
@@ -135,6 +188,27 @@ namespace LivingNPCs
                 if (Mentions(text, sim.name))
                 {
                     Ask(sim.name, sim, null, Channel.Say, text);
+                    return;
+                }
+            }
+            // Talking right next to a sim without targeting anyone: the closest one answers.
+            float radius = Plugin.AiNearbyRadius.Value;
+            if (radius > 0f)
+            {
+                SimPlayer closest = null;
+                float best = radius;
+                foreach (SimPlayer sim in SimLife.NearbySims(radius, includeGroup: true))
+                {
+                    float d = Vector3.Distance(sim.transform.position, SimLife.PlayerPos);
+                    if (d <= best && SimLife.Idle(sim))
+                    {
+                        best = d;
+                        closest = sim;
+                    }
+                }
+                if (closest != null)
+                {
+                    Ask(closest.name, closest, null, Channel.Say, text);
                     return;
                 }
             }
@@ -203,6 +277,11 @@ namespace LivingNPCs
             float asked = Time.time;
             Ollama.Chat(messages, npc != null ? 110 : 70, reply =>
             {
+                if (reply == null && Time.time - lastFailureNotice > 60f)
+                {
+                    lastFailureNotice = Time.time;
+                    TryChat("Living NPCs: " + who + " couldn't answer: " + Ollama.LastError + ". Type /ai test to check.", "yellow");
+                }
                 reply = Clean(reply, who, npc == null && SimLife.PersonaOf(sim) != "roleplayer");
                 if (string.IsNullOrEmpty(reply)) return;
                 if (remember)
@@ -455,7 +534,11 @@ namespace LivingNPCs
             if (text != "/ai" && !text.StartsWith("/ai ")) return true;
             string arg = text.Length > 3 ? text.Substring(4).Trim() : "";
 
-            if (arg == "on")
+            if (arg == "test")
+            {
+                AIChat.Test();
+            }
+            else if (arg == "on")
             {
                 Plugin.AiEnabled.Value = true;
                 AIChat.Prepare(quiet: false);
@@ -473,10 +556,11 @@ namespace LivingNPCs
             }
             else
             {
-                string state = !Plugin.AiEnabled.Value ? "off" : AIChat.Ready ? "on and ready" : "on, but not connected";
-                UpdateSocialLog.LogAdd("Living NPCs AI chat is " + state + " (model " + Plugin.AiModel.Value + "). " +
-                                       "Target a sim or NPC and type to talk, use /p for your group, or /w Name to whisper. " +
-                                       "Commands: /ai on, /ai off, /ai model NAME", "yellow");
+                string state = !Plugin.AiEnabled.Value ? "OFF" : AIChat.Ready ? "ON and connected" : "ON but NOT connected";
+                UpdateSocialLog.LogAdd("Living NPCs AI chat: " + state + ". Model: " + Plugin.AiModel.Value + ", Ollama at " + Plugin.AiUrl.Value + ".", "yellow");
+                if (!string.IsNullOrEmpty(Ollama.LastError)) UpdateSocialLog.LogAdd("Last problem: " + Ollama.LastError, "yellow");
+                UpdateSocialLog.LogAdd("To talk: target a sim or NPC (or stand next to a sim) and type; /p for your group; /w Name to whisper.", "yellow");
+                UpdateSocialLog.LogAdd("Commands: /ai test, /ai on, /ai off, /ai model NAME", "yellow");
             }
             return false;
         }

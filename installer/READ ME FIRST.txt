@@ -19,7 +19,8 @@ TO UNINSTALL
 IN GAME
   /emotes     list emotes (/wave, /bow, /cheer, /hug, /dance, ...)
   /friends    your closest friendships      /memories Name   what someone remembers about you
-  /ai         AI chat status. Target a sim or NPC and type to talk to them.
+  /ai         AI chat status. Target a sim or NPC (or stand next to a sim) and type to talk.
+  /ai test    check the AI is working
   /p message  talk to your group      /w Name message   whisper a sim
   Ctrl+F8     reload the dialogue files after editing them
 
