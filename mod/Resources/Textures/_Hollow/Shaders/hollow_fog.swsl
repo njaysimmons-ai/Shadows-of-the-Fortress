@@ -1,0 +1,69 @@
+// Screen-space fog for the Hollow Fog game mode.
+// Clear around the centre of the screen (the player), thickening into drifting fog toward the edges.
+// The same shader draws the Otherworld: near-black, red-tinged, with film grain.
+
+light_mode unshaded;
+
+uniform highp vec3 fogColor;
+// 0..1, overall strength of the overlay.
+uniform highp float density;
+// Fraction of the shorter screen dimension that stays mostly clear.
+uniform highp float innerRadius;
+// Fraction of the shorter screen dimension past which the fog is fully opaque.
+uniform highp float outerRadius;
+// 0..1, amount of flickering film grain.
+uniform highp float grain;
+// 0..1, how much fog hangs right next to the player.
+uniform highp float veil;
+
+highp float hash(highp vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+}
+
+highp float valueNoise(highp vec2 p) {
+    highp vec2 i = floor(p);
+    highp vec2 f = fract(p);
+    highp vec2 u = f * f * (3.0 - 2.0 * f);
+    return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x),
+               mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
+}
+
+highp float fbm(highp vec2 p) {
+    highp float total = 0.0;
+    highp float amp = 0.5;
+    for (int i = 0; i < 4; i++) {
+        total += valueNoise(p) * amp;
+        p *= 2.03;
+        amp *= 0.5;
+    }
+    return total;
+}
+
+void fragment() {
+    highp vec2 screenSize = vec2(1.0 / SCREEN_PIXEL_SIZE.x, 1.0 / SCREEN_PIXEL_SIZE.y);
+    highp float minDim = min(screenSize.x, screenSize.y);
+    highp vec2 centred = (FRAGCOORD.xy - screenSize * 0.5) / minDim;
+    highp float dist = length(centred);
+
+    // Two layers of noise drifting in different directions read as rolling fog.
+    highp vec2 uv = FRAGCOORD.xy / minDim * 3.0;
+    highp float drift = fbm(uv + vec2(TIME * 0.05, TIME * 0.02))
+                      * 0.6 + fbm(uv * 1.7 - vec2(TIME * 0.03, -TIME * 0.04)) * 0.4;
+
+    // Wobble the clear radius with the noise so the edge of visibility isn't a perfect circle.
+    highp float wobble = (drift - 0.5) * 0.12;
+    highp float edge = smoothstep(innerRadius + wobble, outerRadius + wobble, dist);
+
+    // A thin veil of fog even right next to the player.
+    highp float alpha = mix(veil + drift * veil, 1.0, edge) * density;
+
+    highp vec3 colour = fogColor * (0.85 + drift * 0.3);
+
+    if (grain > 0.0) {
+        highp float n = hash(FRAGCOORD.xy + vec2(fract(TIME * 7.0) * 113.0, fract(TIME * 3.0) * 71.0));
+        colour += (n - 0.5) * 0.25 * grain;
+        alpha = clamp(alpha + (n - 0.5) * 0.1 * grain, 0.0, 1.0);
+    }
+
+    COLOR = vec4(colour, alpha);
+}

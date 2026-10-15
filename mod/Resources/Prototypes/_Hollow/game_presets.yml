@@ -1,0 +1,13 @@
+- type: gamePreset
+  id: HollowFog
+  alias:
+  - hollow
+  - fog
+  - hollowfog
+  name: hollow-fog-title
+  description: hollow-fog-description
+  showInVote: true
+  minPlayers: 1
+  rules:
+  - HollowFogRule
+  - BasicRoundstartVariation

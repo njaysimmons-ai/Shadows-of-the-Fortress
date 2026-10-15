@@ -1,0 +1,25 @@
+- type: entity
+  id: HollowDissolveEffect
+  name: fading shadow
+  categories: [ HideSpawnMenu ]
+  save: false
+  components:
+  - type: PointLight
+    radius: 2
+    energy: 1.5
+    softness: 10
+    color: "#5a0d08"
+  - type: Transform
+    noRot: true
+  - type: Sprite
+    sprite: Objects/Magic/Eldritch/eldritch_actions.rsi
+    drawdepth: Effects
+    noRot: true
+    color: "#2a0a08"
+    layers:
+    - state: "voidblink"
+  - type: TimedDespawn
+    lifetime: 1
+  - type: Tag
+    tags:
+    - HideContextMenu

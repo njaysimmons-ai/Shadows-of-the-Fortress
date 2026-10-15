@@ -1,0 +1,15 @@
+- type: entity
+  parent: BaseGameRule
+  id: HollowFogRule
+  components:
+  - type: HollowFogRule
+    monsters:
+    - id: MobHollowHusk
+      prob: 0.55
+      orGroup: monster
+    - id: MobHollowCrawler
+      prob: 0.4
+      orGroup: monster
+    - id: MobHollowWarden
+      prob: 0.05
+      orGroup: monster

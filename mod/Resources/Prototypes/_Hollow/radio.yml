@@ -1,0 +1,32 @@
+- type: entity
+  parent: BaseItem
+  id: HollowPocketRadio
+  name: pocket radio
+  description: A battered little radio that only picks up static. The static gets worse when something is near.
+  components:
+  - type: StaticRadio
+  - type: ItemToggle
+    activated: true
+    soundActivate:
+      path: /Audio/Machines/button.ogg
+    soundDeactivate:
+      path: /Audio/Machines/button.ogg
+  - type: ItemToggleExaminableStatus
+  - type: Sprite
+    sprite: Objects/Devices/communication.rsi
+    layers:
+    - state: walkietalkie
+    - state: walkietalkie-on
+      shader: unshaded
+      map: [ "enum.ToggleableVisuals.Layer" ]
+  - type: Appearance
+  - type: GenericVisualizer
+    visuals:
+      enum.ToggleableVisuals.Enabled:
+        enum.ToggleableVisuals.Layer:
+          True: { visible: true }
+          False: { visible: false }
+  - type: Item
+    sprite: Objects/Devices/communication.rsi
+    heldPrefix: walkietalkie
+    size: Tiny

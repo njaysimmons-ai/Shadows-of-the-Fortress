@@ -1,0 +1,6 @@
+- type: soundCollection
+  id: HollowRadioStatic
+  files:
+  - /Audio/_Hollow/static1.ogg
+  - /Audio/_Hollow/static2.ogg
+  - /Audio/_Hollow/static3.ogg

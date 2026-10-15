@@ -1,0 +1,4 @@
+- files: ["siren.ogg", "static1.ogg", "static2.ogg", "static3.ogg"]
+  license: "CC0-1.0"
+  copyright: "Procedurally synthesized for the Hollow Fog game mode (tools/generate_audio.py in Shadows-of-the-Fortress)."
+  source: "https://github.com/njaysimmons-ai/Shadows-of-the-Fortress"
