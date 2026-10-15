@@ -13,7 +13,7 @@ namespace LivingNPCs
     public class Plugin : BaseUnityPlugin
     {
         public const string Guid = "njaysimmons.erenshor.livingnpcs";
-        public const string Version = "0.3.1";
+        public const string Version = "0.4.0";
 
         internal static ManualLogSource Log;
         internal static DialogueBank Bank;
@@ -70,6 +70,7 @@ namespace LivingNPCs
         internal static ConfigEntry<float> FriendshipDailyCap;
         internal static ConfigEntry<bool> FriendshipAffectsGame;
         internal static ConfigEntry<bool> FriendshipAnnounce;
+        internal static ConfigEntry<bool> BaldOption;
         internal static ConfigEntry<KeyboardShortcut> ReloadKey;
 
         private string dialoguePath;
@@ -125,6 +126,8 @@ namespace LivingNPCs
             FriendshipDailyCap = Config.Bind("Friendships", "DailyGainCap", 12f, "Most friendship one character can gain with you per real day, so bonds build over time.");
             FriendshipAffectsGame = Config.Bind("Friendships", "AffectsSimOpinion", true, "Raise a sim's in-game opinion of you as your friendship grows (the game uses it for grouping and guild invites).");
             FriendshipAnnounce = Config.Bind("Friendships", "AnnounceNewTiers", true, "Show a message when you and someone become Friends, Good Friends, and so on.");
+
+            BaldOption = Config.Bind("Appearance", "BaldHairstyle", true, "Adds a Bald hairstyle at the end of the character creation hair choices, and the /hair command.");
 
             ReloadKey = Config.Bind("General", "ReloadDialogueKey", new KeyboardShortcut(KeyCode.F8, KeyCode.LeftControl),
                 "Reloads dialogue.txt without restarting the game.");

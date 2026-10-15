@@ -51,7 +51,8 @@ Typing quirks still apply: a lowercase chill sim stays lowercase, a hype sim sta
 On a strong graphics card, an 8B model (`llama3.1:8b`, `qwen2.5:7b`) gives noticeably better replies.
 
 **If sims don't seem to use the AI:** type `/ai`. It says whether it's connected and what the last
-problem was. `/ai test` sends a test message and shows the reply and how long it took. When you
+problem was, and while it's setting up, exactly what it's doing (downloading the model with a
+percentage, or loading it into video memory). `/ai test` sends a test message and shows the reply and how long it took. When you
 enter the world the mod also says whether AI chat is on, and if a reply fails it tells you why.
 It retries the connection every minute, so starting Ollama after the game is fine.
 Details are also in `Erenshor/BepInEx/LogOutput.log`.
@@ -135,6 +136,12 @@ they are, or pin a specific sim with `[sim.Name]` and `@persona=grump`.
 - **Hostile and busy NPCs** get varied replies instead of the same `...` and `I'm busy right now...`.
 
 All the writing lives in one plain-text file you can edit and reload in game with **Ctrl+F8**.
+
+## Bald hairstyle
+
+Character creation's hairstyle arrows now include **Bald** after the last style (beards are
+separate, so bald-and-bearded works). For characters you already have, type `/hair` to cycle
+styles, `/hair prev` to go back, or `/bald` to shave it all off; it saves with the character.
 
 ## Install
 

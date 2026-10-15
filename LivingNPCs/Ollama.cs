@@ -31,6 +31,9 @@ namespace LivingNPCs
 
         /// <summary>Why the last request or setup failed, in plain words, for /ai.</summary>
         public static volatile string LastError = "";
+
+        /// <summary>What setup is doing right now, for /ai: "downloading qwen2.5:14b: 47%" and so on.</summary>
+        public static volatile string Phase = "not started yet";
         public static bool Busy => Volatile.Read(ref inFlight) > 0;
 
         /// <summary>Runs finished callbacks on the game thread. Call every frame.</summary>
@@ -86,9 +89,11 @@ namespace LivingNPCs
             bool autoPull = Plugin.AiAutoDownload.Value;
             Background(() =>
             {
+                Phase = "looking for Ollama at " + BaseUrl;
                 bool ok = Ping();
                 if (!ok && autoStart && TryLaunch())
                 {
+                    Phase = "starting Ollama";
                     Post(status, "Living NPCs: starting the AI...");
                     for (int i = 0; i < 20 && !ok; i++)
                     {
@@ -99,6 +104,7 @@ namespace LivingNPCs
                 if (!ok)
                 {
                     LastError = "Ollama isn't running at " + BaseUrl + " (is it installed? see ollama.com)";
+                    Phase = "waiting for Ollama (retrying every minute)";
                     Post(status, "Living NPCs: AI chat can't reach Ollama. It will keep retrying; type /ai for help.");
                     Post(() => ready(false));
                     return;
@@ -112,20 +118,23 @@ namespace LivingNPCs
                         Post(() => ready(false));
                         return;
                     }
-                    Post(status, "Living NPCs: downloading the AI model '" + model + "' (a few GB, one time only). Sims will start talking when it's done.");
+                    Phase = "downloading " + model;
+                    Post(status, "Living NPCs: downloading the AI model '" + model + "' (one time only, it's several GB). Type /ai to see progress.");
                     try
                     {
-                        Http("POST", "/api/pull", "{\"name\":" + Json.Quote(model) + ",\"stream\":false}", 60 * 60 * 1000);
+                        Pull(model, status);
                     }
                     catch (Exception e)
                     {
                         LastError = "couldn't download model '" + model + "': " + e.Message;
+                        Phase = "download failed (will retry in a minute)";
                         Post(status, "Living NPCs: couldn't download the AI model: " + e.Message);
                         Post(() => ready(false));
                         return;
                     }
                 }
                 // Load the model into video memory now, so the first real reply isn't slow.
+                Phase = "loading " + model + " into video memory";
                 try
                 {
                     Http("POST", "/api/generate", "{\"model\":" + Json.Quote(model) + ",\"prompt\":\"hi\",\"stream\":false,\"keep_alive\":\"30m\",\"options\":{\"num_predict\":1}}", 180 * 1000);
@@ -133,14 +142,58 @@ namespace LivingNPCs
                 catch (Exception e)
                 {
                     LastError = "the model failed to load: " + e.Message;
+                    Phase = "model failed to load (will retry in a minute)";
                     Post(status, "Living NPCs: the AI model '" + model + "' failed to load: " + e.Message);
                     Post(() => ready(false));
                     return;
                 }
                 LastError = "";
+                Phase = "ready";
                 Post(status, "Living NPCs: AI chat is ready (" + model + "). Talk to sims and NPCs!");
                 Post(() => ready(true));
             });
+        }
+
+        /// <summary>Downloads a model, streaming progress into <see cref="Phase"/> and a chat line every 25%.</summary>
+        private static void Pull(string model, Action<string> status)
+        {
+            var request = (HttpWebRequest)WebRequest.Create(BaseUrl + "/api/pull");
+            request.Method = "POST";
+            request.Proxy = null;
+            request.Timeout = 60 * 1000;
+            request.ReadWriteTimeout = 10 * 60 * 1000;
+            byte[] bytes = Encoding.UTF8.GetBytes("{\"name\":" + Json.Quote(model) + ",\"stream\":true}");
+            request.ContentType = "application/json";
+            request.ContentLength = bytes.Length;
+            using (Stream s = request.GetRequestStream()) s.Write(bytes, 0, bytes.Length);
+            int lastQuarter = 0;
+            using (var response = (HttpWebResponse)request.GetResponse())
+            using (var reader = new StreamReader(response.GetResponseStream(), Encoding.UTF8))
+            {
+                string line;
+                while ((line = reader.ReadLine()) != null)
+                {
+                    string error = Json.Field(line, "error");
+                    if (error != null) throw new Exception(error);
+                    double total = Json.Number(line, "total"), done = Json.Number(line, "completed");
+                    if (total > 0)
+                    {
+                        int percent = (int)(done * 100 / total);
+                        Phase = "downloading " + model + ": " + percent + "% of " + (total / 1e9).ToString("0.0") + " GB";
+                        int quarter = percent / 25;
+                        if (quarter > lastQuarter && quarter < 4)
+                        {
+                            lastQuarter = quarter;
+                            Post(status, "Living NPCs: downloading the AI model: " + percent + "%");
+                        }
+                    }
+                    else
+                    {
+                        string state = Json.Field(line, "status");
+                        if (!string.IsNullOrEmpty(state)) Phase = model + ": " + state;
+                    }
+                }
+            }
         }
 
         private static void Post(Action<string> status, string message) => Completed.Enqueue(() => status(message));
@@ -282,6 +335,21 @@ namespace LivingNPCs
                 }
             }
             return sb.Append('"').ToString();
+        }
+
+        /// <summary>Returns the first numeric value of the given key, or 0.</summary>
+        public static double Number(string json, string key)
+        {
+            if (json == null) return 0;
+            string marker = "\"" + key + "\"";
+            int at = json.IndexOf(marker, StringComparison.Ordinal);
+            if (at < 0) return 0;
+            int i = json.IndexOf(':', at + marker.Length) + 1;
+            if (i <= 0) return 0;
+            int start = i;
+            while (i < json.Length && (char.IsDigit(json[i]) || json[i] == '.' || json[i] == '-' || json[i] == ' ')) i++;
+            return double.TryParse(json.Substring(start, i - start).Trim(), System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out double v) ? v : 0;
         }
 
         /// <summary>Returns the first string value of the given key, unescaped, or null.</summary>

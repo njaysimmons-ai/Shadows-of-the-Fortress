@@ -53,12 +53,12 @@ namespace LivingNPCs
                 nextRetry = Time.time + 60f;
                 Prepare(quiet: true);
             }
-            if (!announced && Plugin.AiEnabled.Value && WorldContext.PlayerReady && attempts > 0 && !preparing)
+            if (!announced && Plugin.AiEnabled.Value && WorldContext.PlayerReady && attempts > 0)
             {
                 announced = true;
                 UpdateSocialLog.LogAdd(Ready
                     ? "Living NPCs: AI chat is on (" + Plugin.AiModel.Value + "). Target a sim or NPC, or stand next to one, and type to talk."
-                    : "Living NPCs: AI chat isn't connected: " + Ollama.LastError + ". Type /ai for help.", Ready ? "#7FD1AE" : "yellow");
+                    : "Living NPCs: AI chat isn't ready yet: " + (string.IsNullOrEmpty(Ollama.LastError) ? Ollama.Phase : Ollama.LastError) + ". Type /ai for progress.", Ready ? "#7FD1AE" : "yellow");
             }
 
             if (Waiting.Count > 0 && Ready && !Ollama.Busy) Waiting.Dequeue()();
@@ -107,7 +107,9 @@ namespace LivingNPCs
         {
             if (!Ready)
             {
-                UpdateSocialLog.LogAdd("AI test: not connected. " + Ollama.LastError, "yellow");
+                UpdateSocialLog.LogAdd(preparing
+                    ? "AI test: still getting ready: " + Ollama.Phase + ". Try again when that finishes."
+                    : "AI test: not connected. " + Ollama.LastError + " Retrying now...", "yellow");
                 Prepare(quiet: false);
                 return;
             }
@@ -558,6 +560,7 @@ namespace LivingNPCs
             {
                 string state = !Plugin.AiEnabled.Value ? "OFF" : AIChat.Ready ? "ON and connected" : "ON but NOT connected";
                 UpdateSocialLog.LogAdd("Living NPCs AI chat: " + state + ". Model: " + Plugin.AiModel.Value + ", Ollama at " + Plugin.AiUrl.Value + ".", "yellow");
+                if (Plugin.AiEnabled.Value && !AIChat.Ready) UpdateSocialLog.LogAdd("Right now: " + Ollama.Phase, "yellow");
                 if (!string.IsNullOrEmpty(Ollama.LastError)) UpdateSocialLog.LogAdd("Last problem: " + Ollama.LastError, "yellow");
                 UpdateSocialLog.LogAdd("To talk: target a sim or NPC (or stand next to a sim) and type; /p for your group; /w Name to whisper.", "yellow");
                 UpdateSocialLog.LogAdd("Commands: /ai test, /ai on, /ai off, /ai model NAME", "yellow");

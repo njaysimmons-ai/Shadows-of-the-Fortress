@@ -22,6 +22,7 @@ IN GAME
   /ai         AI chat status. Target a sim or NPC (or stand next to a sim) and type to talk.
   /ai test    check the AI is working
   /p message  talk to your group      /w Name message   whisper a sim
+  /hair       change hairstyle (/hair prev, /bald); Bald is also in character creation
   Ctrl+F8     reload the dialogue files after editing them
 
 Your settings and all the dialogue files are in Erenshor\BepInEx\config\
