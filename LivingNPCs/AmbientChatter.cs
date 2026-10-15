@@ -54,6 +54,7 @@ namespace LivingNPCs
                 scannedZone = zone;
                 nextAllowed.Clear();
                 Plugin.Memory.Save();
+                SimVoices.ForgetDestroyed();
                 // Give the player a moment to arrive before anyone starts talking.
                 nextLine = now + Plugin.AmbientMinSeconds.Value;
                 Plugin.Log.LogInfo("Zone is '" + zone + "'. Use [ambient.zone." + zone + "] in dialogue.txt for lines here.");

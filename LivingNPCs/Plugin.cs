@@ -29,9 +29,15 @@ namespace LivingNPCs
         internal static ConfigEntry<float> AmbientMinSeconds;
         internal static ConfigEntry<float> AmbientMaxSeconds;
         internal static ConfigEntry<float> PerNpcCooldownSeconds;
+        internal static ConfigEntry<bool> EnableSimVoices;
+        internal static ConfigEntry<bool> SimVoicesForPremade;
+        internal static ConfigEntry<float> SimPersonaShare;
+        internal static ConfigEntry<float> SimSmallTalkShare;
+        internal static ConfigEntry<bool> LogSimPersonas;
         internal static ConfigEntry<KeyboardShortcut> ReloadKey;
 
         private string dialoguePath;
+        private string simsPath;
 
         private void Awake()
         {
@@ -48,12 +54,19 @@ namespace LivingNPCs
             AmbientMaxSeconds = Config.Bind("Ambient", "MaxSecondsBetweenLines", 60f, "Longest gap between overheard lines.");
             PerNpcCooldownSeconds = Config.Bind("Ambient", "PerNpcCooldownSeconds", 150f, "How long one NPC stays quiet after speaking.");
 
+            EnableSimVoices = Config.Bind("Sim Players", "Enabled", true, "Give each generated sim player its own persona: typing style and extra lines.");
+            SimVoicesForPremade = Config.Bind("Sim Players", "AlsoChangeHandmadeSims", false, "Also give personas to the game's hand-written sims (they already have their own voices).");
+            SimPersonaShare = Config.Bind("Sim Players", "PersonaShare", 0.6f, "Roughly what fraction (0-1) of a sim's lines come from its persona rather than the game's shared pool.");
+            SimSmallTalkShare = Config.Bind("Sim Players", "SmallTalkShare", 0.6f, "Chance (0-1) a sim's small-talk shout uses its own lines instead of the zone's shared comments.");
+            LogSimPersonas = Config.Bind("Sim Players", "LogPersonas", true, "Write each sim's persona to the BepInEx log as it spawns.");
+
             ReloadKey = Config.Bind("General", "ReloadDialogueKey", new KeyboardShortcut(KeyCode.F8, KeyCode.LeftControl),
                 "Reloads dialogue.txt without restarting the game.");
 
             string folder = Path.Combine(Paths.ConfigPath, "LivingNPCs");
             Directory.CreateDirectory(folder);
             dialoguePath = Path.Combine(folder, "dialogue.txt");
+            simsPath = Path.Combine(folder, "sims.txt");
             Memory = new NpcMemory(Path.Combine(folder, "memory"));
             LoadDialogue();
 
@@ -67,7 +80,8 @@ namespace LivingNPCs
             if (ReloadKey.Value.IsDown())
             {
                 LoadDialogue();
-                UpdateSocialLog.LogAdd("Living NPCs: reloaded " + Bank.LineCount + " lines of dialogue.", "yellow");
+                UpdateSocialLog.LogAdd("Living NPCs: reloaded " + Bank.LineCount + " NPC lines and " + SimVoices.PersonaCount +
+                                       " sim personas. Personas apply to sims as they next spawn.", "yellow");
             }
         }
 
@@ -83,24 +97,37 @@ namespace LivingNPCs
 
         private void LoadDialogue()
         {
+            Bank = LoadText(dialoguePath, "dialogue.txt") ?? Bank ?? new DialogueBank();
+            DialogueBank sims = LoadText(simsPath, "sims.txt");
+            if (sims != null)
+            {
+                SimVoices.Load(sims);
+                Log.LogInfo("Loaded " + SimVoices.PersonaCount + " sim personas.");
+            }
+        }
+
+        /// <summary>Loads a text file from the config folder, first writing the built-in default if it's missing.</summary>
+        private DialogueBank LoadText(string path, string resource)
+        {
             try
             {
-                if (!File.Exists(dialoguePath))
+                if (!File.Exists(path))
                 {
-                    using (Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("LivingNPCs.dialogue.txt"))
+                    using (Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("LivingNPCs." + resource))
                     using (var reader = new StreamReader(stream))
                     {
-                        File.WriteAllText(dialoguePath, reader.ReadToEnd());
+                        File.WriteAllText(path, reader.ReadToEnd());
                     }
-                    Log.LogInfo("Wrote default dialogue to " + dialoguePath);
+                    Log.LogInfo("Wrote default " + resource + " to " + path);
                 }
-                Bank = DialogueBank.Load(dialoguePath);
-                Log.LogInfo("Loaded " + Bank.LineCount + " lines of dialogue.");
+                DialogueBank bank = DialogueBank.Load(path);
+                Log.LogInfo("Loaded " + bank.LineCount + " lines from " + resource + ".");
+                return bank;
             }
             catch (Exception e)
             {
-                Log.LogError("Could not load " + dialoguePath + ": " + e);
-                Bank = Bank ?? new DialogueBank();
+                Log.LogError("Could not load " + path + ": " + e);
+                return null;
             }
         }
     }

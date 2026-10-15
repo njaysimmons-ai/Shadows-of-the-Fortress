@@ -59,6 +59,8 @@ namespace LivingNPCs
             }
         }
 
+        public IEnumerable<string> SectionNames => sections.Keys;
+
         public bool Has(string section)
         {
             return sections.TryGetValue(section, out var lines) && lines.Count > 0;

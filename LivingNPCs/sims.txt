@@ -1,0 +1,893 @@
+# Living NPCs: sim player personas
+#
+# Erenshor builds every generated sim from the same template, so they all sound alike. Each one
+# now gets a persona, picked from its name, so it keeps the same persona every time you play.
+# A persona changes how the sim types and mixes its own lines into the game's.
+# Hand-made sims keep their own voices unless you turn on AlsoChangeHandmadeSims in the config.
+# Press Ctrl+F8 in game to reload; sims pick up changes the next time they spawn.
+#
+# [persona.<id>] settings, one per line:
+#   @weight=10        how common this persona is
+#   @fits=1,2,3,5     only for sims with these game temperaments: 1 nice, 2 tryhard, 3 mean, 5 plain
+#   @lower=0.8        chance a sim with this persona types all in lowercase
+#   @caps=0.2         chance it types IN ALL CAPS
+#   @emojis=0.3       chance it sprinkles emojis
+#   @thirdperson=0.1  chance it talks about itself in the third person
+#   @typos=0.2-0.6    how sloppy its typing is (a range; each sim lands somewhere in it)
+#   @signoff=lol|ya   occasional tag at the end of a message; each sim gets one of these
+#
+# [persona.<id>.<List>] lines added to one of the game's phrase lists for that persona:
+#   GenericLines         small talk shouted in zone chat (a ? makes other sims answer)
+#   Greetings            one or two words: "hey", "yo". The game adds the "!" or the next words
+#   Invites              asking you to group. NN is your character's name
+#   Justifications       the reason after an invite: "we need a healer"
+#   Confirms, Affirms    yes / sure / omw
+#   DeclineGroup         turning down a group invite
+#   OTW                  "on my way"
+#   Died                 said to the group after dying
+#   Exclamations         a word or two: "ugh". Also used before an insult
+#   InsultsFun           friendly trash talk aimed at another sim
+#   RetortsFun           replies to trash talk
+#   Impressed            reacting to a good drop or kill
+#   Gratitude            thanks for a buff or item
+#   AcknowledgeGratitude "np"
+#   LevelUpCelebration   shouted on leveling up
+#   Goodnight            logging off
+#   WantsDrop            asking for loot. II is the item's name
+#   GoodLastOuting, BadLastOuting, BeenAWhile   remembering the last time you grouped
+#
+# [smalltalk.zone.<Zone>] small talk any persona can use in that zone (scene name, see the log).
+# [sim.<Name>] with @persona=<id> forces one sim to a persona.
+
+# ===================================================================== chill
+[persona.chill]
+@weight=14
+@fits=1,5
+@lower=0.85
+@typos=0.2-0.5
+@signoff=lol|ya|heh|:)
+
+[persona.chill.GenericLines]
+anyone else just vibing in azure today
+honestly fishing is underrated
+just hit my stride, no rush
+lol someone ran a train through the whole zone earlier
+might go poke around silkengrass later
+whats everyone up to tonight?
+love the music in this zone ngl
+taking it slow this week
+the sunsets in this game tho
+
+[persona.chill.Greetings]
+hey
+heya
+yo
+sup
+
+[persona.chill.Invites]
+hey NN wanna duo for a bit
+NN you around? could use a hand
+
+[persona.chill.Justifications]
+no pressure tho
+we can just chill and xp
+
+[persona.chill.Confirms]
+ya sure
+sounds good
+k cool
+
+[persona.chill.Affirms]
+ya
+sure thing
+
+[persona.chill.DeclineGroup]
+nah im good for now, ty tho
+gonna solo a bit, maybe later
+
+[persona.chill.OTW]
+omw
+heading over
+
+[persona.chill.Died]
+welp
+lol oops
+rip me
+
+[persona.chill.Exclamations]
+lol
+heh
+
+[persona.chill.Impressed]
+oh nice
+ayy
+
+[persona.chill.Gratitude]
+ty ty
+appreciate it
+
+[persona.chill.AcknowledgeGratitude]
+np
+anytime
+
+[persona.chill.LevelUpCelebration]
+ding :)
+lvl up, nice
+
+[persona.chill.Goodnight]
+gn all
+heading to bed, cya
+
+[persona.chill.WantsDrop]
+mind if i grab II?
+could use II if no one wants it
+
+[persona.chill.BeenAWhile]
+oh hey NN, been a min
+NN! where you been
+
+# ===================================================================== hype
+[persona.hype]
+@weight=10
+@fits=1,5
+@caps=0.35
+@emojis=0.5
+@typos=0.3-0.7
+@signoff=LETS GO|!!!|woo
+
+[persona.hype.GenericLines]
+WHO WANTS TO GO KILL SOMETHING BIG
+just got the best drop of my life no cap
+is anyone doing a raid tonight?? im SO in
+this game is so good i forgot to eat
+i will literally fight anything right now
+GUYS i finally got my spell
+
+[persona.hype.Greetings]
+HEY
+yooo
+heyyy
+
+[persona.hype.Invites]
+NN!!! group up with me lets goooo
+NN come on we're gonna crush it
+
+[persona.hype.Justifications]
+its gonna be SO good
+we'll be unstoppable
+
+[persona.hype.Confirms]
+YES
+lets gooo
+im in im in
+
+[persona.hype.Affirms]
+heck yes
+YES
+
+[persona.hype.DeclineGroup]
+ahh i cant right now but next time for SURE
+
+[persona.hype.OTW]
+OMW!!!
+running there NOW
+
+[persona.hype.Died]
+NOOOO
+i was SO close
+worth it lol
+
+[persona.hype.Exclamations]
+OMG
+WOW
+
+[persona.hype.Impressed]
+NO WAY
+thats insane
+HUGE
+
+[persona.hype.Gratitude]
+YOU'RE THE BEST
+omg thank you!!
+
+[persona.hype.LevelUpCelebration]
+DING!!! LETS GOOOO
+LEVEL UP BABY
+
+[persona.hype.Goodnight]
+gotta sleep but tomorrow we GO AGAIN
+
+[persona.hype.WantsDrop]
+OMG can i have II pleaseee
+
+[persona.hype.GoodLastOuting]
+last time was SO fun
+we were cooking last time
+
+# ===================================================================== oldschool
+[persona.oldschool]
+@weight=10
+@fits=2,5
+@typos=0.05-0.2
+@signoff=-old timer|o7
+
+[persona.oldschool.GenericLines]
+Back in my day we had to med for ten minutes between pulls. You kids have it easy.
+Reminder: don't train mobs to the zone line. Some of us remember.
+Anyone camping anything worth waiting for? I've got patience.
+Kids these days don't even look at the map.
+Pro tip: always know where your exit is before you pull.
+I've seen a lot of groups wipe because nobody called the pull.
+A good puller is worth more than any sword.
+
+[persona.oldschool.Greetings]
+Evening
+Hail
+Hello there
+
+[persona.oldschool.Invites]
+NN, I could use a steady hand. Group?
+Looking for one more, NN. You in?
+
+[persona.oldschool.Justifications]
+We'll take it slow and do it right.
+I'll call the pulls.
+
+[persona.oldschool.Confirms]
+Understood.
+Will do.
+Roger that.
+
+[persona.oldschool.DeclineGroup]
+Not tonight. Need to med and do some tradeskills.
+
+[persona.oldschool.OTW]
+On my way. Don't pull without me.
+
+[persona.oldschool.Died]
+That's what I get for not checking the pull.
+Corpse run time. Don't wait up.
+Should've rested first.
+
+[persona.oldschool.Exclamations]
+Hmph
+Bah
+
+[persona.oldschool.InsultsFun]
+you pull like it's your first day
+I've seen better positioning from a training dummy
+
+[persona.oldschool.RetortsFun]
+I was tanking before you knew what aggro was
+Respect your elders
+
+[persona.oldschool.Impressed]
+Well done.
+Now that's a proper drop.
+
+[persona.oldschool.Gratitude]
+Much obliged.
+
+[persona.oldschool.LevelUpCelebration]
+Another level. Slow and steady.
+
+[persona.oldschool.Goodnight]
+Logging. Don't do anything I wouldn't do.
+
+[persona.oldschool.BadLastOuting]
+We'll do better this time, we learned something last outing
+
+# ===================================================================== roleplayer
+[persona.roleplayer]
+@weight=7
+@fits=1,5
+@thirdperson=0.25
+@typos=0.0-0.1
+@signoff=*bows*|By Brax's light.|*tips hat*
+
+[persona.roleplayer.GenericLines]
+*sharpens blade by the fire* Any brave souls seeking adventure this eve?
+The stars are restless tonight. Soluna watches, I think.
+Hail, travelers! Has anyone word from the Brake? I hear something stalks its swamps by moonlight.
+I seek companions for the road. The wilds are no place to walk alone.
+*raises a tankard* To Port Azure, and the Guard that keeps her safe!
+They say the stone men of Rockshade Hold were scholars once. A grim fate.
+Mind the lights in the forest, friends. Not every glow is a friendly one.
+
+[persona.roleplayer.Greetings]
+Well met
+Hail
+Greetings
+
+[persona.roleplayer.Invites]
+NN! Will you join my company? I could use a stalwart ally.
+Our fellowship has room for one more, NN.
+
+[persona.roleplayer.Justifications]
+Glory awaits us!
+Together we shall prevail.
+
+[persona.roleplayer.Confirms]
+Aye.
+It shall be done.
+As you wish.
+
+[persona.roleplayer.DeclineGroup]
+Alas, another quest calls me. Fare thee well.
+
+[persona.roleplayer.OTW]
+I ride to you now!
+
+[persona.roleplayer.Died]
+I... have fallen... avenge me!
+Tell my tale in the taverns...
+A grievous blow!
+
+[persona.roleplayer.Exclamations]
+Gods
+By Brax
+
+[persona.roleplayer.InsultsFun]
+thou art a scoundrel and a knave
+your mother was a Malaroth
+
+[persona.roleplayer.RetortsFun]
+I'll not be insulted by the likes of you!
+Mind your tongue, cur!
+
+[persona.roleplayer.Impressed]
+A worthy prize!
+Remarkable!
+
+[persona.roleplayer.Gratitude]
+You have my thanks, friend.
+I am in your debt.
+
+[persona.roleplayer.LevelUpCelebration]
+I feel my strength grow!
+The spirits have blessed me!
+
+[persona.roleplayer.Goodnight]
+I must rest. Until the morrow, friends.
+
+[persona.roleplayer.WantsDrop]
+Might I claim II, if none object?
+
+# ===================================================================== tryhard
+[persona.tryhard]
+@weight=10
+@fits=2
+@typos=0.05-0.25
+@signoff=gg|ez
+
+[persona.tryhard.GenericLines]
+anyone know the best xp spot for my level? no time to waste
+if you're not min maxing your stats what are you even doing
+LFG serious players only, no afk
+how many kills per hour is everyone getting? i'm at 40
+this gear is trash, need upgrades asap
+your rotation matters more than your gear, change my mind
+
+[persona.tryhard.Greetings]
+hey
+sup
+
+[persona.tryhard.Invites]
+NN need a dps, you good? we're farming efficiently
+NN group? we're chain pulling
+
+[persona.tryhard.Justifications]
+best xp/hr in the zone
+we're gonna be fast
+
+[persona.tryhard.Confirms]
+k
+ready
+go
+
+[persona.tryhard.DeclineGroup]
+nah, only grouping with people who can keep up rn
+
+[persona.tryhard.OTW]
+omw, start pulling
+
+[persona.tryhard.Died]
+healer???
+that was NOT my fault
+lag
+
+[persona.tryhard.Exclamations]
+ugh
+seriously
+
+[persona.tryhard.InsultsFun]
+check your dps
+you're holding the group back
+
+[persona.tryhard.RetortsFun]
+i'm literally top of the meters
+cope
+
+[persona.tryhard.Impressed]
+decent
+that's a real upgrade
+
+[persona.tryhard.LevelUpCelebration]
+ding. on schedule
+another level, keep going
+
+[persona.tryhard.WantsDrop]
+II is a big upgrade for me, need
+need II, best in slot
+
+[persona.tryhard.BadLastOuting]
+last group was a mess, we need better pulls
+
+# ===================================================================== grump
+[persona.grump]
+@weight=8
+@fits=3
+@lower=0.4
+@typos=0.1-0.4
+@signoff=ugh|whatever
+
+[persona.grump.GenericLines]
+who keeps leaving corpses everywhere
+the drop rates in this game are a joke
+another day another nothing drop
+why is everyone so loud today
+i swear the spawns get slower every time i'm here
+somebody tell the town crier to keep it down
+
+[persona.grump.Greetings]
+oh
+hey i guess
+
+[persona.grump.Invites]
+NN fine, you can join
+
+[persona.grump.Justifications]
+don't make me regret it
+
+[persona.grump.Confirms]
+fine
+yeah yeah
+whatever
+
+[persona.grump.DeclineGroup]
+no
+not with you lot
+
+[persona.grump.OTW]
+coming, keep your shirt on
+
+[persona.grump.Died]
+of course
+great. just great
+this is why i solo
+
+[persona.grump.Exclamations]
+ugh
+pfft
+
+[persona.grump.InsultsFun]
+nobody asked
+you're why we can't have nice things
+
+[persona.grump.RetortsFun]
+yeah? and?
+cry about it
+
+[persona.grump.Impressed]
+huh. not bad
+lucky
+
+[persona.grump.Gratitude]
+...thanks
+
+[persona.grump.LevelUpCelebration]
+ding. finally
+
+[persona.grump.Goodnight]
+done for tonight, this game hates me
+
+[persona.grump.WantsDrop]
+i'm taking II, i never get anything
+
+# ===================================================================== newbie
+[persona.newbie]
+@weight=10
+@fits=1,5
+@lower=0.3
+@typos=0.4-0.9
+@signoff=:o|?|lol sorry
+
+[persona.newbie.GenericLines]
+how do i get to port azure from here?
+is the bank where you put your stuff? sorry new
+what does mana do exactly
+does anyone know how to get a better weapon?
+which way to silkengrass meadow?
+whats a pull? people keep saying pull
+is it normal to die this much lol
+is fishing worth it?
+
+[persona.newbie.Greetings]
+hi
+hello
+hiii
+
+[persona.newbie.Invites]
+NN um can i group with you? i'm kinda new
+
+[persona.newbie.Justifications]
+i'll try not to die lol
+
+[persona.newbie.Confirms]
+ok!
+okay
+sure!!
+
+[persona.newbie.DeclineGroup]
+oh i'm not good enough yet, sorry
+
+[persona.newbie.OTW]
+coming! i think
+
+[persona.newbie.Died]
+wait what happened
+i died again lol
+how do i get my stuff back
+
+[persona.newbie.Exclamations]
+oh no
+whoa
+
+[persona.newbie.Impressed]
+wow!!
+is that good? it looks good
+
+[persona.newbie.Gratitude]
+thank you so much!!
+wow thanks!!
+
+[persona.newbie.LevelUpCelebration]
+i leveled!! what do i do now
+ding? is that what you say?
+
+[persona.newbie.Goodnight]
+gotta go, thanks for helping me!!
+
+[persona.newbie.WantsDrop]
+is II for me? i don't know what it does
+
+# ===================================================================== jokester
+[persona.jokester]
+@weight=8
+@fits=1,3,5
+@lower=0.5
+@emojis=0.3
+@typos=0.2-0.5
+@signoff=lmao|xD|jk
+
+[persona.jokester.GenericLines]
+why did the skeleton leave the group? no guts lol
+i'm not lost, i'm sightseeing aggressively
+hot take: the malaroths just want a hug
+if you see me running at you with a train, no you didn't
+i tried to tame a spider, it went poorly
+my strategy is to panic and see what happens
+ever notice the town crier never takes a day off?
+
+[persona.jokester.Greetings]
+ayo
+hellooo
+
+[persona.jokester.Invites]
+NN join my group, we have snacks (we do not have snacks)
+
+[persona.jokester.Justifications]
+it'll be fun probably
+
+[persona.jokester.Confirms]
+on it boss
+aye aye
+
+[persona.jokester.Died]
+i meant to do that
+tactical death
+the floor was lava
+
+[persona.jokester.Exclamations]
+lmao
+bruh
+
+[persona.jokester.InsultsFun]
+you smell like a swamp in rottenfoot
+your armor is held together by hope
+
+[persona.jokester.RetortsFun]
+at least my mom likes me
+bold words from someone wearing that
+
+[persona.jokester.Impressed]
+ooh shiny
+fancy
+
+[persona.jokester.LevelUpCelebration]
+level up! i'm basically a god now
+ding! fear me
+
+[persona.jokester.Goodnight]
+logging off before i embarrass myself further
+
+[persona.jokester.WantsDrop]
+II would look great on me ngl
+
+# ===================================================================== wholesome
+[persona.wholesome]
+@weight=9
+@fits=1
+@emojis=0.4
+@typos=0.05-0.3
+@signoff=<3|:)|stay safe
+
+[persona.wholesome.GenericLines]
+if anyone needs help with a quest just shout!
+reminder to drink some water everyone
+anyone new here? happy to show you around
+you're all doing great, keep it up
+i have some spare gear if anyone needs it
+love this community honestly
+
+[persona.wholesome.Greetings]
+hi friend
+hello
+hey there
+
+[persona.wholesome.Invites]
+NN want some company? i'll heal you up
+NN come group with us, we'd love to have you
+
+[persona.wholesome.Justifications]
+we'll look out for you
+it's more fun together
+
+[persona.wholesome.Confirms]
+of course!
+happy to!
+
+[persona.wholesome.DeclineGroup]
+aw i can't right now but have fun!!
+
+[persona.wholesome.OTW]
+on my way, hang in there!
+
+[persona.wholesome.Died]
+oops! we'll get them next time
+it's okay, happens to everyone
+
+[persona.wholesome.Impressed]
+congrats!! so happy for you
+you deserve it
+
+[persona.wholesome.Gratitude]
+aww thank you!
+you're so kind
+
+[persona.wholesome.AcknowledgeGratitude]
+anytime, friend!
+of course!
+
+[persona.wholesome.LevelUpCelebration]
+yay level up!! thank you all for the help
+
+[persona.wholesome.Goodnight]
+goodnight everyone, sleep well!
+
+[persona.wholesome.WantsDrop]
+only if nobody else needs it, but i could use II
+
+[persona.wholesome.GoodLastOuting]
+had so much fun last time
+last time was lovely
+
+# ===================================================================== lorehound
+[persona.lorehound]
+@weight=6
+@fits=1,2,5
+@typos=0.05-0.25
+@signoff=read the books!|lore matters
+
+[persona.lorehound.GenericLines]
+Did you know Fernalla and Vitheo were Brax and Sivakaya's children? Both fell, and became gods.
+Anyone found any more of those journal pages? The ones about the North?
+The Wisp still hide in Loomingwood, warding against Sivakaya. Eldrin Shadowmire leads them.
+Brax made the desert himself to contain the blight. Buried his own people doing it.
+Astra scattered herself into stardust along the crater's edge. Wild, right?
+Who even is Azynthi? Every text I find makes it murkier.
+Someone said the Duskenlight school is where magic was first given freely. Anyone been?
+The Reavers guard the Darkness from the world, and the world from the Darkness. Cool oath honestly.
+
+[persona.lorehound.Greetings]
+Hey
+Oh hello
+
+[persona.lorehound.Invites]
+NN, want to explore some ruins with me?
+
+[persona.lorehound.Justifications]
+there might be more lore pages there
+
+[persona.lorehound.Confirms]
+Sure
+Okay
+
+[persona.lorehound.Died]
+I got distracted reading a plaque
+Worth it, there was lore
+
+[persona.lorehound.Exclamations]
+Fascinating
+Huh
+
+[persona.lorehound.Impressed]
+Is that Braxonian? Incredible
+
+[persona.lorehound.LevelUpCelebration]
+Level up! More of the world to read about
+
+[persona.lorehound.Goodnight]
+Off to bed. Brax rest you all.
+
+[persona.lorehound.WantsDrop]
+Could I study II? Purely for research
+
+# ===================================================================== lootgoblin
+[persona.lootgoblin]
+@weight=6
+@fits=2,3
+@lower=0.4
+@typos=0.2-0.5
+@signoff=$$$|mine
+
+[persona.lootgoblin.GenericLines]
+WTB anything shiny, paying in compliments
+does anyone know what drops off the big guys in the brake
+i've been farming for six hours and my bags are full of junk
+anyone selling rare stuff? asking for me
+the auction house is robbing me blind
+what's the most valuable thing in this zone?
+
+[persona.lootgoblin.Greetings]
+hey
+oh hi
+
+[persona.lootgoblin.Invites]
+NN group? i call dibs on loot
+
+[persona.lootgoblin.Justifications]
+good drops here
+
+[persona.lootgoblin.Confirms]
+yep
+ok but i loot
+
+[persona.lootgoblin.Died]
+my loot!!
+did anyone grab my stuff
+
+[persona.lootgoblin.Exclamations]
+gimme
+ooh
+
+[persona.lootgoblin.Impressed]
+how much is that worth??
+ugh i wanted that
+
+[persona.lootgoblin.LevelUpCelebration]
+ding, now i can use better loot
+
+[persona.lootgoblin.WantsDrop]
+II!! mine mine mine
+please let me have II, i'll trade you later
+need II, need, need
+
+[persona.lootgoblin.GotAnItemLastOuting]
+still flexing my
+
+# ===================================================================== terse
+[persona.terse]
+@weight=8
+@fits=2,3,5
+@lower=0.6
+@typos=0.0-0.15
+
+[persona.terse.GenericLines]
+lfg
+any healers
+inc
+wts
+brb
+afk 5
+
+[persona.terse.Greetings]
+hi
+yo
+
+[persona.terse.Invites]
+NN grp?
+
+[persona.terse.Justifications]
+xp
+
+[persona.terse.Confirms]
+k
+ok
+y
+
+[persona.terse.DeclineGroup]
+no ty
+
+[persona.terse.OTW]
+omw
+
+[persona.terse.Died]
+dead
+rip
+
+[persona.terse.Exclamations]
+oof
+
+[persona.terse.Impressed]
+gz
+nice
+
+[persona.terse.Gratitude]
+ty
+
+[persona.terse.AcknowledgeGratitude]
+np
+
+[persona.terse.LevelUpCelebration]
+ding
+
+[persona.terse.Goodnight]
+gn
+
+[persona.terse.WantsDrop]
+need II
+
+# ===================================================================== zone small talk
+# Any sim with a persona may use these in the matching zone.
+
+[smalltalk.zone.Azure]
+anyone know a good vendor in azure for armor?
+port azure is so busy today
+the azure guard is out in force
+anyone selling stuff by the docks?
+
+[smalltalk.zone.Stowaway]
+first day here, where do we go?
+anyone know how to get off this boat lol
+
+[smalltalk.zone.Hidden]
+the hidden hills are so peaceful
+anyone hunting in the hills?
+
+[smalltalk.zone.Brake]
+something keeps following me in the brake
+the brake is creepy at night, not gonna lie
+don't follow the lights in the brake
+
+[smalltalk.zone.Loomingwood]
+loomingwood is huge, i keep getting lost
+anyone seen the wisp folk around here?
+
+[smalltalk.zone.Rottenfoot]
+rottenfoot smells so bad
+watch your step in this bog
+
+[smalltalk.zone.Willowwatch]
+willowwatch is so pretty
+anyone grinding near willowwatch?

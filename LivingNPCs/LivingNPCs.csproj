@@ -35,6 +35,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="dialogue.txt" LogicalName="LivingNPCs.dialogue.txt" />
+    <EmbeddedResource Include="sims.txt" LogicalName="LivingNPCs.sims.txt" />
   </ItemGroup>
 
   <!-- Copies the built plugin into BepInEx/plugins when the game folder exists. -->
