@@ -16,6 +16,7 @@ namespace LivingNPCs
         public float LowerChance, CapsChance, EmojiChance, ThirdPersonChance;
         public float TypoMin = 0.1f, TypoMax = 0.4f;
         public List<string> SignOffs = new List<string>();
+        public string About = "";
         public readonly Dictionary<string, List<string>> Lines = new Dictionary<string, List<string>>();
 
         public bool FitsTemperament(int personalityType) => Fits.Count == 0 || Fits.Contains(personalityType);
@@ -47,6 +48,12 @@ namespace LivingNPCs
         }
 
         public static int PersonaCount => personas.Count;
+
+        public static string AboutOf(string personaId)
+        {
+            Persona p = personaId == null ? null : personas.Find(x => string.Equals(x.Id, personaId, StringComparison.OrdinalIgnoreCase));
+            return p != null ? p.About : "";
+        }
 
         /// <summary>The persona id this sim was given, or null for hand-made sims and sims without one.</summary>
         public static string PersonaOf(SimPlayer sim)
@@ -128,6 +135,7 @@ namespace LivingNPCs
             switch (key)
             {
                 case "weight": persona.Weight = ParseFloat(value); break;
+                case "about": persona.About = value; break;
                 case "lower": persona.LowerChance = ParseFloat(value); break;
                 case "caps": persona.CapsChance = ParseFloat(value); break;
                 case "emojis": persona.EmojiChance = ParseFloat(value); break;

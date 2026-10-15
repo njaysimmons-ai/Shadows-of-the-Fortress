@@ -20,6 +20,7 @@ namespace LivingNPCs
         internal static NpcMemory Memory;
         internal static DialogueBank Life = new DialogueBank();
         internal static SimBonds Bonds;
+        internal static DialogueBank Ai = new DialogueBank();
         internal static readonly System.Random Rng = new System.Random();
 
         internal static ConfigEntry<bool> EnableGreetings;
@@ -46,11 +47,21 @@ namespace LivingNPCs
         internal static ConfigEntry<float> ReactionChance;
         internal static ConfigEntry<float> PostFightChance;
         internal static ConfigEntry<float> MemoryChance;
+        internal static ConfigEntry<bool> AiEnabled;
+        internal static ConfigEntry<string> AiModel;
+        internal static ConfigEntry<string> AiUrl;
+        internal static ConfigEntry<bool> AiAutoStart;
+        internal static ConfigEntry<bool> AiAutoDownload;
+        internal static ConfigEntry<string> AiOllamaPath;
+        internal static ConfigEntry<bool> AiStopOllamaOnQuit;
+        internal static ConfigEntry<float> AiTimeoutSeconds;
+        internal static ConfigEntry<float> AiOverhearChance;
         internal static ConfigEntry<KeyboardShortcut> ReloadKey;
 
         private string dialoguePath;
         private string simsPath;
         private string lifePath;
+        private string aiPath;
 
         private void Awake()
         {
@@ -84,6 +95,16 @@ namespace LivingNPCs
             PostFightChance = Config.Bind("Living World", "PostFightChance", 0.3f, "Chance (0-1) someone comments after a fight.");
             MemoryChance = Config.Bind("Living World", "MemoryGreetingChance", 0.4f, "Chance (0-1) a sim's greeting mentions something you went through together.");
 
+            AiEnabled = Config.Bind("AI Chat", "Enabled", true, "Talk to sims and NPCs in your own words, answered by a local AI (Ollama). Toggle in game with /ai on or /ai off.");
+            AiModel = Config.Bind("AI Chat", "Model", "llama3.2:3b", "Ollama model to use. llama3.2:3b (2 GB) suits most PCs; try llama3.1:8b or qwen2.5:7b on a strong GPU.");
+            AiUrl = Config.Bind("AI Chat", "OllamaUrl", "http://127.0.0.1:11434", "Where Ollama is listening.");
+            AiAutoStart = Config.Bind("AI Chat", "StartOllamaAutomatically", true, "Launch Ollama in the background when the game starts, if it's installed and not already running.");
+            AiAutoDownload = Config.Bind("AI Chat", "DownloadModelAutomatically", true, "Download the model on first use if it's missing.");
+            AiOllamaPath = Config.Bind("AI Chat", "OllamaPath", "", "Full path to ollama.exe, if it isn't in the usual place.");
+            AiStopOllamaOnQuit = Config.Bind("AI Chat", "StopOllamaOnQuit", true, "Close Ollama when you quit the game, if the mod started it.");
+            AiTimeoutSeconds = Config.Bind("AI Chat", "TimeoutSeconds", 40f, "Give up on a reply after this long.");
+            AiOverhearChance = Config.Bind("AI Chat", "OverhearChance", 0.35f, "Chance (0-1) a nearby sim answers a question you ask out loud without naming anyone.");
+
             ReloadKey = Config.Bind("General", "ReloadDialogueKey", new KeyboardShortcut(KeyCode.F8, KeyCode.LeftControl),
                 "Reloads dialogue.txt without restarting the game.");
 
@@ -92,6 +113,7 @@ namespace LivingNPCs
             dialoguePath = Path.Combine(folder, "dialogue.txt");
             simsPath = Path.Combine(folder, "sims.txt");
             lifePath = Path.Combine(folder, "life.txt");
+            aiPath = Path.Combine(folder, "ai.txt");
             Memory = new NpcMemory(Path.Combine(folder, "memory"));
             Bonds = new SimBonds(Path.Combine(folder, "memory"));
             LoadDialogue();
@@ -100,6 +122,7 @@ namespace LivingNPCs
             gameObject.AddComponent<Scheduler>();
             gameObject.AddComponent<AmbientChatter>();
             gameObject.AddComponent<SimLife>();
+            gameObject.AddComponent<AIChat>();
             Log.LogInfo("Living NPCs " + Version + " loaded.");
         }
 
@@ -130,6 +153,7 @@ namespace LivingNPCs
         {
             Bank = LoadText(dialoguePath, "dialogue.txt") ?? Bank ?? new DialogueBank();
             Life = LoadText(lifePath, "life.txt") ?? Life;
+            Ai = LoadText(aiPath, "ai.txt") ?? Ai;
             DialogueBank sims = LoadText(simsPath, "sims.txt");
             if (sims != null)
             {

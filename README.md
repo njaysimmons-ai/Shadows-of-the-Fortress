@@ -2,6 +2,36 @@
 
 A [BepInEx 5](https://github.com/BepInEx/BepInEx) plugin that makes Erenshor's sim players and NPCs feel more alive.
 
+## Talk to anyone (AI chat)
+
+With [Ollama](https://ollama.com) installed, you can talk to sims and NPCs in your own words and
+they answer in character, generated on your own PC (free, private, no internet needed once set up).
+
+**One-time setup:** install Ollama from ollama.com. That's it. When the game starts, the mod
+launches Ollama in the background if it isn't running, downloads the model the first time
+(`llama3.2:3b`, about 2 GB), and tells you in chat when sims are ready to talk.
+It closes Ollama again when you quit.
+
+**How to talk:**
+- **Target a sim and type** (normal /say). They answer in their persona's voice, aware of their
+  mood, the zone, the time, and your shared history ("we wiped twice in Rottenfoot").
+- **Say a nearby sim's name** in a message and that sim answers.
+- **Ask a question out loud** and someone nearby might answer.
+- **/p message** to your group: a groupmate answers (or the one you named).
+- **/w Name message**: whisper any sim, even one in another zone.
+- **Target an NPC and type**: they answer in character, based on their real in-game dialogue.
+  Quest keywords still go to the game, so quests work exactly as before.
+
+Messages about grouping, invites and trading are left to the game's own sims, so the game's group,
+invite and trade handling isn't affected.
+Typing quirks still apply: a lowercase chill sim stays lowercase, a hype sim stays loud.
+
+**In game:** `/ai` shows status, `/ai off` and `/ai on` toggle it, `/ai model llama3.1:8b` switches model.
+On a strong graphics card, an 8B model (`llama3.1:8b`, `qwen2.5:7b`) gives noticeably better replies.
+
+How characters are described to the AI, including a summary of Erenshor's lore drawn from the
+game itself, lives in `ai.txt`.
+
 ## A living world
 
 Sims and NPCs now *do* things, not just say things. Actions appear in chat as emotes
@@ -85,6 +115,7 @@ All the writing lives in one plain-text file you can edit and reload in game wit
 2. Put `LivingNPCs.dll` in `Erenshor/BepInEx/plugins/LivingNPCs/`.
 3. Launch the game. The mod writes its files to `Erenshor/BepInEx/config/`:
    - `njaysimmons.erenshor.livingnpcs.cfg`: settings (chatter frequency, radius, toggles)
+   - `LivingNPCs/ai.txt`: how sims and NPCs are described to the AI, and the lore it knows
    - `LivingNPCs/life.txt`: actions, reactions, banter, memories and emotes
    - `LivingNPCs/sims.txt`: sim player personas
    - `LivingNPCs/dialogue.txt`: every line NPCs can say
@@ -134,4 +165,7 @@ Game assemblies are referenced from your install and are never committed to this
   shared history, relationships and moods.
 - `PlayerEmotes.cs` patches `TypeText.CheckCommands` to add emote commands, and
   `SimPlayerLanguage.GetTargetedHello` so greetings can bring up shared memories.
+- `Ollama.cs` talks to the local Ollama server on a background thread (and can start it and pull
+  the model); `AIChat.cs` patches `TypeText.CheckInput` to see what you type, decides who should
+  answer, builds their prompt and prints the reply through the game's chat.
 - `NpcMemory.cs` keeps the per-character meeting counts and last-seen times.

@@ -15,6 +15,7 @@
 #   @thirdperson=0.1  chance it talks about itself in the third person
 #   @typos=0.2-0.6    how sloppy its typing is (a range; each sim lands somewhere in it)
 #   @signoff=lol|ya   occasional tag at the end of a message; each sim gets one of these
+#   @about=...        how the persona is described to the AI (see ai.txt), if AI chat is on
 #
 # [persona.<id>.<List>] lines added to one of the game's phrase lists for that persona:
 #   GenericLines         small talk shouted in zone chat (a ? makes other sims answer)
@@ -41,6 +42,7 @@
 
 # ===================================================================== chill
 [persona.chill]
+@about=laid-back and friendly, types in lowercase, never in a hurry, says ya, lol, np
 @weight=14
 @fits=1,5
 @lower=0.85
@@ -128,6 +130,7 @@ NN! where you been
 
 # ===================================================================== hype
 [persona.hype]
+@about=loud and excitable, LOVES the game, uses caps and lots of exclamation marks
 @weight=10
 @fits=1,5
 @caps=0.35
@@ -206,6 +209,7 @@ we were cooking last time
 
 # ===================================================================== oldschool
 [persona.oldschool]
+@about=a veteran MMO player, a bit gruff but helpful, nostalgic about harder old-school games, talks about pulls, medding and camps
 @weight=10
 @fits=2,5
 @typos=0.05-0.2
@@ -279,6 +283,7 @@ We'll do better this time, we learned something last outing
 
 # ===================================================================== roleplayer
 [persona.roleplayer]
+@about=a roleplayer who speaks in character as a fantasy adventurer, a little theatrical, says things like well met and aye
 @weight=7
 @fits=1,5
 @thirdperson=0.25
@@ -355,6 +360,7 @@ Might I claim II, if none object?
 
 # ===================================================================== tryhard
 [persona.tryhard]
+@about=competitive min-maxer obsessed with xp per hour, gear and efficiency, blunt, a bit impatient
 @weight=10
 @fits=2
 @typos=0.05-0.25
@@ -425,6 +431,7 @@ last group was a mess, we need better pulls
 
 # ===================================================================== grump
 [persona.grump]
+@about=grumpy and sarcastic, complains a lot, short replies, secretly decent underneath
 @weight=8
 @fits=3
 @lower=0.4
@@ -496,6 +503,7 @@ i'm taking II, i never get anything
 
 # ===================================================================== newbie
 [persona.newbie]
+@about=new to the game, asks lots of questions, enthusiastic, unsure of game terms, makes typos
 @weight=10
 @fits=1,5
 @lower=0.3
@@ -563,6 +571,7 @@ is II for me? i don't know what it does
 
 # ===================================================================== jokester
 [persona.jokester]
+@about=class clown who jokes, teases and trash talks playfully
 @weight=8
 @fits=1,3,5
 @lower=0.5
@@ -626,6 +635,7 @@ II would look great on me ngl
 
 # ===================================================================== wholesome
 [persona.wholesome]
+@about=kind, supportive and encouraging, offers help, uses <3
 @weight=9
 @fits=1
 @emojis=0.4
@@ -694,6 +704,7 @@ last time was lovely
 
 # ===================================================================== lorehound
 [persona.lorehound]
+@about=obsessed with Erenshor's lore and history, loves talking about gods and ruins
 @weight=6
 @fits=1,2,5
 @typos=0.05-0.25
@@ -745,6 +756,7 @@ Could I study II? Purely for research
 
 # ===================================================================== lootgoblin
 [persona.lootgoblin]
+@about=greedy for loot and gold, always asking about drops and prices
 @weight=6
 @fits=2,3
 @lower=0.4
@@ -798,6 +810,7 @@ still flexing my
 
 # ===================================================================== terse
 [persona.terse]
+@about=says as little as possible, one or two words, MMO abbreviations
 @weight=8
 @fits=2,3,5
 @lower=0.6
