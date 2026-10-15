@@ -57,6 +57,10 @@ enter the world the mod also says whether AI chat is on, and if a reply fails it
 It retries the connection every minute, so starting Ollama after the game is fine.
 Details are also in `Erenshor/BepInEx/LogOutput.log`.
 
+Still stuck? Double-click **Check AI.bat** in the mod folder (with the game closed). It checks each
+step (Ollama installed, running, model downloaded, a real test reply), starts Ollama or downloads the
+model with visible progress if needed, shows what the mod logged, and saves a report to your Desktop.
+
 How characters are described to the AI, including a summary of Erenshor's lore drawn from the
 game itself, lives in `ai.txt`.
 

@@ -103,7 +103,7 @@ namespace LivingNPCs
                 }
                 if (!ok)
                 {
-                    LastError = "Ollama isn't running at " + BaseUrl + " (is it installed? see ollama.com)";
+                    LastError = "can't reach Ollama at " + BaseUrl + " (" + LastPingError + "). Is Ollama installed and running? Run 'Check AI.bat' from the mod folder";
                     Phase = "waiting for Ollama (retrying every minute)";
                     Post(status, "Living NPCs: AI chat can't reach Ollama. It will keep retrying; type /ai for help.");
                     Post(() => ready(false));
@@ -201,9 +201,22 @@ namespace LivingNPCs
 
         private static bool Ping()
         {
-            try { return Http("GET", "/api/tags", null, 3000) != null; }
-            catch { return false; }
+            try
+            {
+                return Http("GET", "/api/tags", null, 5000) != null;
+            }
+            catch (Exception e)
+            {
+                // Keep the real reason: "connection refused" means Ollama isn't running; anything else is worth reporting.
+                string reason = e is WebException we ? we.Status + ": " + we.Message : e.GetType().Name + ": " + e.Message;
+                if (e.InnerException != null) reason += " (" + e.InnerException.Message + ")";
+                LastPingError = reason;
+                Plugin.Log.LogWarning("Couldn't reach Ollama at " + BaseUrl + ": " + reason);
+                return false;
+            }
         }
+
+        private static volatile string LastPingError = "";
 
         private static bool HasModel(string model)
         {

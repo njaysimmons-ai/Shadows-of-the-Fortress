@@ -13,6 +13,10 @@ The installer is a plain-text script; open Install-LivingNPCs.ps1 in Notepad to 
 TO UPDATE
   Run the installer again from the new version's folder.
 
+IF AI CHAT WON'T CONNECT
+  Double-click "Check AI.bat". It checks each step, fixes what it can, and saves a report
+  to your Desktop (LivingNPCs-AI-report.txt).
+
 TO UNINSTALL
   Double-click "Uninstall Living NPCs.bat".
 
