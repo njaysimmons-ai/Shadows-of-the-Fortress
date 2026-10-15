@@ -880,3 +880,143 @@ later!
 waves farewell.
 [emote.bye.npcsay]
 Safe travels.
+
+# ======================================================================
+# FRIENDSHIPS
+# Bonds grow by adventuring, talking and emoting together, and last between sessions.
+# Tiers: acquaintance, friend, goodfriend, closefriend, bestfriend. Type /friends in game.
+# {memory} is something they remember, written to follow "remember when", e.g.
+# "we wiped together in Rottenfoot" or "you told me your favorite spell is fireball".
+# ======================================================================
+
+[friend.recall]
+remember when {memory}?
+still think about when {memory}
+lol remember when {memory}
+{memory}... good times
+never forgetting when {memory}
+
+[friend.recall.roleplayer]
+I recall the day {memory}. A fine tale.
+
+[friend.recall.grump]
+yeah yeah, i remember when {memory}. whatever
+
+[friend.recall.terse]
+{memory}. good times
+
+[friend.greet.friend]
+always good to see you {player}
+there's my buddy
+hey friend!
+
+[friend.greet.goodfriend]
+{player}!! was hoping you'd be on
+my favorite person to group with
+i saved you a spot, {player}
+
+[friend.greet.closefriend]
+{player}! i was literally just thinking about you
+there you are! been waiting all day
+you and me, {player}. let's go
+
+[friend.greet.bestfriend]
+BESTIE! {player}!!
+{player}!!! my best friend in all of erenshor
+wouldn't want to adventure with anyone else, {player}
+
+[friend.greet.closefriend.grump]
+oh good, you. the only one here i can stand
+
+[friend.greet.bestfriend.grump]
+fine, i'll admit it. i'm glad you're here {player}
+
+[friend.greet.bestfriend.roleplayer]
+My dearest companion! The road is brighter with you on it, {player}.
+
+[friend.login]
+hey {player}! you're on!
+yo {player}, wanna group later?
+hi {player}! good to see you on :)
+{player}! where you at?
+
+[friend.login.longtime]
+{player}!!! you're back! where've you been??
+omg {player} it's been forever
+missed you {player}! the game isn't the same without you
+
+[friend.login.grump]
+oh, you're on. good. everyone else is annoying
+
+[friend.login.roleplayer]
+Ho there, {player}! The road has missed you.
+
+[friend.login.terse]
+hey {player}
+
+[friend.tierup.acquaintance]
+hey you're alright {player}
+we should group again sometime
+
+[friend.tierup.friend]
+we're friends now, right {player}? i'm adding you to my list
+honestly {player}, you're one of the good ones
+i'm glad we met {player}
+
+[friend.tierup.goodfriend]
+{player} you're seriously one of my favorite people in this game
+hit me up any time you need help, {player}. i mean it
+
+[friend.tierup.closefriend]
+{player} i don't say this a lot but... you're a real friend
+we've been through so much together {player}
+
+[friend.tierup.bestfriend]
+{player}... best friends? best friends.
+i'd follow you into any dungeon in erenshor, {player}
+you're my best friend in this whole game, {player}
+
+[friend.tierup.friend.grump]
+fine. you're... tolerable, {player}. more than tolerable
+
+[friend.tierup.bestfriend.grump]
+don't tell anyone, but you're my best friend, {player}
+
+[friend.tierup.friend.roleplayer]
+I name you friend, {player}, and I do not say it lightly.
+
+[friend.tierup.bestfriend.roleplayer]
+By Brax, {player}, you are as a sibling to me now.
+
+[friend.tierup.friend.terse]
+ur cool {player}
+
+[action.toplayer.friend]
+waves at you excitedly!
+[flourish] gives you a big salute.
+grins and waves you over.
+[dance] does a little happy dance when they see you.
+jogs over to say hi.
+points at you and smiles.
+
+[emote.wave.react.friend]
+waves back with both arms!
+[dance] does a happy little dance and waves.
+
+[emote.hug.react.friend]
+hugs you tight.
+gives you a big bear hug.
+squeezes you and laughs.
+
+[emote.hug.reply.friend]
+missed you!
+best hugs in erenshor
+
+[emote.cheer.react.friend]
+[flourish] cheers even louder with you!
+
+[emote.bow.react.friend]
+laughs and bows back dramatically.
+
+[emote.taunt.react.friend]
+laughs it off and shoves you playfully.

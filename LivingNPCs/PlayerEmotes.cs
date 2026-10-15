@@ -116,12 +116,38 @@ namespace LivingNPCs
             }
         }
 
+        private static readonly HashSet<string> Kind = new HashSet<string> { "wave", "bow", "cheer", "salute", "thank", "clap", "nod", "greet", "bye", "wink", "flex", "shrug" };
+        private static readonly HashSet<string> Caring = new HashSet<string> { "hug", "comfort" };
+        private static readonly HashSet<string> Mean = new HashSet<string> { "taunt", "laugh", "facepalm", "point" };
+
+        /// <summary>Emoting at someone directly nudges your friendship, and the heartfelt ones are remembered.</summary>
+        private static void Bond(string key, string command)
+        {
+            if (!FriendshipEvents.On) return;
+            Friendships friends = Plugin.FriendsNow();
+            friends.Meet(key, WorldContext.Zone);
+            if (Kind.Contains(command)) friends.Add(key, 1f);
+            else if (Caring.Contains(command))
+            {
+                friends.Add(key, 2f);
+                friends.Remember(key, command == "hug" ? "you hugged me in " + WorldContext.Zone : "you comforted me when i needed it");
+            }
+            else if (Mean.Contains(command))
+            {
+                friends.Add(key, command == "taunt" ? -3f : -1f);
+                if (command == "taunt") friends.Remember(key, "you taunted me in " + WorldContext.Zone);
+            }
+        }
+
         private static void SimRespond(SimPlayer sim, string command, bool direct, float delay)
         {
             string persona = SimLife.PersonaOf(sim);
             string mood = SimLife.MoodOf(sim);
+            if (direct) Bond(Friendships.Sim(sim.name), command);
             var tokens = new Dictionary<string, string> { ["player"] = WorldContext.PlayerName };
-            string action = Lines.Fill(Lines.Pick("emote." + command + ".react", persona, mood), tokens);
+            string reactSection = "emote." + command + ".react";
+            if (SimLife.TierWith(sim) >= 2 && Plugin.Life.Has(reactSection + ".friend") && Plugin.Rng.NextDouble() < 0.6) reactSection += ".friend";
+            string action = Lines.Fill(Lines.Pick(reactSection, persona, mood), tokens);
             string reply = direct || Plugin.Rng.NextDouble() < 0.4
                 ? Lines.Fill(Lines.Pick("emote." + command + ".reply", persona, mood), tokens)
                 : null;
@@ -136,6 +162,7 @@ namespace LivingNPCs
 
         private static void NpcRespond(NPC npc, string command)
         {
+            Bond(Friendships.Npc(npc.NPCName), command);
             string action = Plugin.Life.PickFirst(Plugin.Rng, "emote." + command + ".npc", "emote.any.npc");
             string words = Plugin.Life.Has("emote." + command + ".npcsay") && Plugin.Rng.NextDouble() < 0.5
                 ? Plugin.Life.PickFirst(Plugin.Rng, "emote." + command + ".npcsay")
@@ -175,8 +202,17 @@ namespace LivingNPCs
             {
                 if (!Plugin.EnableLife.Value || _sim == null || Plugin.Rng.NextDouble() > Plugin.MemoryChance.Value) return;
                 Plugin.Bonds.UseCharacter(WorldContext.PlayerName);
-                string memory = SimLife.MemoryLine(_sim.SimName, "memory.greet", _sim.MyAvatar);
-                if (memory != null) __result = (__result ?? "").TrimEnd() + " " + memory;
+                string key = Friendships.Sim(_sim.SimName);
+                int tier = FriendshipEvents.On ? Plugin.FriendsNow().Tier(key) : 0;
+                string extra = null;
+                if (tier >= 2 && Plugin.Rng.NextDouble() < 0.4)
+                {
+                    extra = Lines.Fill(Lines.Pick("friend.greet." + Friendships.TierIds[tier], SimLife.PersonaOf(_sim.MyAvatar)),
+                        new Dictionary<string, string> { ["player"] = WorldContext.PlayerName });
+                }
+                if (extra == null && tier >= 1 && Plugin.Rng.NextDouble() < 0.6) extra = FriendshipEvents.Recall(key, _sim.MyAvatar);
+                if (extra == null) extra = SimLife.MemoryLine(_sim.SimName, "memory.greet", _sim.MyAvatar);
+                if (extra != null) __result = (__result ?? "").TrimEnd() + " " + extra;
             }
             catch (Exception e)
             {

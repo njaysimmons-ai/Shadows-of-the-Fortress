@@ -13,7 +13,7 @@ namespace LivingNPCs
     public class Plugin : BaseUnityPlugin
     {
         public const string Guid = "njaysimmons.erenshor.livingnpcs";
-        public const string Version = "0.2.0";
+        public const string Version = "0.3.0";
 
         internal static ManualLogSource Log;
         internal static DialogueBank Bank;
@@ -21,6 +21,14 @@ namespace LivingNPCs
         internal static DialogueBank Life = new DialogueBank();
         internal static SimBonds Bonds;
         internal static DialogueBank Ai = new DialogueBank();
+        internal static Friendships Friends;
+
+        /// <summary>The current character's friendships, loading them if the character changed.</summary>
+        internal static Friendships FriendsNow()
+        {
+            Friends.UseCharacter(WorldContext.PlayerName);
+            return Friends;
+        }
         internal static readonly System.Random Rng = new System.Random();
 
         internal static ConfigEntry<bool> EnableGreetings;
@@ -56,6 +64,11 @@ namespace LivingNPCs
         internal static ConfigEntry<bool> AiStopOllamaOnQuit;
         internal static ConfigEntry<float> AiTimeoutSeconds;
         internal static ConfigEntry<float> AiOverhearChance;
+        internal static ConfigEntry<bool> EnableFriendships;
+        internal static ConfigEntry<float> FriendshipSpeed;
+        internal static ConfigEntry<float> FriendshipDailyCap;
+        internal static ConfigEntry<bool> FriendshipAffectsGame;
+        internal static ConfigEntry<bool> FriendshipAnnounce;
         internal static ConfigEntry<KeyboardShortcut> ReloadKey;
 
         private string dialoguePath;
@@ -105,6 +118,12 @@ namespace LivingNPCs
             AiTimeoutSeconds = Config.Bind("AI Chat", "TimeoutSeconds", 40f, "Give up on a reply after this long.");
             AiOverhearChance = Config.Bind("AI Chat", "OverhearChance", 0.35f, "Chance (0-1) a nearby sim answers a question you ask out loud without naming anyone.");
 
+            EnableFriendships = Config.Bind("Friendships", "Enabled", true, "Sims and NPCs build lasting friendships with each of your characters and remember what you've done and said together.");
+            FriendshipSpeed = Config.Bind("Friendships", "Speed", 1f, "Multiplier on how fast friendships grow (and shrink).");
+            FriendshipDailyCap = Config.Bind("Friendships", "DailyGainCap", 12f, "Most friendship one character can gain with you per real day, so bonds build over time.");
+            FriendshipAffectsGame = Config.Bind("Friendships", "AffectsSimOpinion", true, "Raise a sim's in-game opinion of you as your friendship grows (the game uses it for grouping and guild invites).");
+            FriendshipAnnounce = Config.Bind("Friendships", "AnnounceNewTiers", true, "Show a message when you and someone become Friends, Good Friends, and so on.");
+
             ReloadKey = Config.Bind("General", "ReloadDialogueKey", new KeyboardShortcut(KeyCode.F8, KeyCode.LeftControl),
                 "Reloads dialogue.txt without restarting the game.");
 
@@ -116,6 +135,8 @@ namespace LivingNPCs
             aiPath = Path.Combine(folder, "ai.txt");
             Memory = new NpcMemory(Path.Combine(folder, "memory"));
             Bonds = new SimBonds(Path.Combine(folder, "memory"));
+            Friends = new Friendships(Path.Combine(folder, "memory"));
+            Friends.TierReached += FriendshipEvents.OnTierReached;
             LoadDialogue();
 
             new Harmony(Guid).PatchAll(typeof(Plugin).Assembly);
@@ -140,6 +161,8 @@ namespace LivingNPCs
         {
             Memory.Save();
             Bonds.Save();
+            Friends.Save();
+            Friends.Save();
         }
 
         private void OnApplicationPause(bool paused)

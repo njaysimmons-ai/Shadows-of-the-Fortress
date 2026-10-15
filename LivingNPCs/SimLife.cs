@@ -36,6 +36,8 @@ namespace LivingNPCs
             try
             {
                 Bonds.UseCharacter(WorldContext.PlayerName);
+                Plugin.FriendsNow();
+                FriendshipEvents.GreetOnLogin();
                 if (zone != WorldContext.Zone)
                 {
                     zone = WorldContext.Zone;
@@ -43,6 +45,7 @@ namespace LivingNPCs
                     lastLevel.Clear();
                     lastPos.Clear();
                     Bonds.Save();
+                    Plugin.Friends.Save();
                     nextIdle = now + 20f;
                     nextBanter = now + RandomRange(Plugin.BanterMinSeconds.Value, Plugin.BanterMaxSeconds.Value);
                 }
@@ -167,6 +170,20 @@ namespace LivingNPCs
         private bool StandingStill(SimPlayer sim) =>
             lastPos.TryGetValue(sim, out Vector3 before) && Vector3.Distance(before, sim.transform.position) < 0.2f;
 
+        /// <summary>Adds friendship with a sim and, optionally, a memory of why.</summary>
+        internal static void Befriend(SimPlayer sim, float points, string memory)
+        {
+            if (sim == null || !FriendshipEvents.On) return;
+            Friendships friends = Plugin.FriendsNow();
+            string key = Friendships.Sim(sim.name);
+            friends.Meet(key, WorldContext.Zone);
+            friends.Add(key, points);
+            if (memory != null) friends.Remember(key, memory);
+        }
+
+        internal static int TierWith(SimPlayer sim) =>
+            sim != null && FriendshipEvents.On ? Plugin.FriendsNow().Tier(Friendships.Sim(sim.name)) : 0;
+
         // ================================================================ events
 
         private void WatchPlayer(List<SimPlayer> group)
@@ -264,6 +281,7 @@ namespace LivingNPCs
                 SharedHistory h = Bonds.History(sim.name);
                 h.Wipes++;
                 h.LastWipeZone = WorldContext.Zone;
+                Befriend(sim, 1f, "we wiped together in " + WorldContext.Zone);
             }
             SimPlayer speaker = PickOne(group);
             if (speaker != null)
@@ -279,6 +297,7 @@ namespace LivingNPCs
             {
                 Bonds.History(sim.name).Levels++;
                 Bonds.ShiftMood(sim.name, 0.2f);
+                Befriend(sim, 3f, "you hit level " + GameData.PlayerStats.Level + " while we were grouped");
             }
             React(group.FindAll(Alive), 2, 0.85f, (sim, delay) =>
             {
@@ -301,6 +320,7 @@ namespace LivingNPCs
         private void OnSimLevel(SimPlayer leveled, List<SimPlayer> group)
         {
             Bonds.ShiftMood(leveled.name, 0.4f);
+            Befriend(leveled, 2f, "i hit level " + (leveled.MyStats != null ? leveled.MyStats.Level : 0) + " in your group");
             React(group.FindAll(s => s != leveled && Alive(s)), 1, 0.6f, (sim, delay) =>
             {
                 string line = Line("react.levelup.sim", sim, leveled);
@@ -317,6 +337,7 @@ namespace LivingNPCs
                 h.Fights++;
                 h.LastZone = here;
                 Bonds.ShiftMood(group[i].name, 0.03f);
+                Befriend(group[i], 0.5f, null);
                 for (int j = i + 1; j < group.Count; j++) Bonds.Nudge(group[i].name, group[j].name, 0.01f);
             }
             if (Rng.NextDouble() > Plugin.PostFightChance.Value) return;
@@ -404,9 +425,10 @@ namespace LivingNPCs
             SimPlayer sim = PickOne(candidates);
             float toPlayer = Vector3.Distance(sim.transform.position, PlayerPos);
 
-            if (toPlayer < 6f && Rng.NextDouble() < 0.25)
+            bool friend = TierWith(sim) >= 2;
+            if ((toPlayer < 6f && Rng.NextDouble() < 0.25) || (friend && toPlayer < 15f && Rng.NextDouble() < 0.4))
             {
-                ActOut(sim, Line("action.toplayer", sim), PlayerPos);
+                ActOut(sim, Line(friend && Plugin.Life.Has("action.toplayer.friend") ? "action.toplayer.friend" : "action.toplayer", sim), PlayerPos);
                 return;
             }
 

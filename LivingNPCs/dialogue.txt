@@ -355,3 +355,40 @@ sits and rests their feet.
 
 [action.zone.Azure]
 watches the ships in the harbour.
+
+# ------------------------------------------------------------------ friendships
+# NPCs you've built a friendship with greet you differently.
+# Tiers: friend, goodfriend, closefriend, bestfriend. Also greet.<role>.<tier> and npc.<Name>.greet.<tier>.
+
+[greet.tier.friend]
+Ah, {player}, my friend. Good to see you.
+{player}! Always a pleasure.
+There you are, {player}.
+
+[greet.tier.goodfriend]
+{player}! Come in, come in. I was hoping you'd stop by.
+My favorite {class}! How have you been?
+
+[greet.tier.closefriend]
+{player}, old friend. Sit a while, you look like you need it.
+If it isn't {player}! The best part of my day.
+
+[greet.tier.bestfriend]
+{player}! There's no one I'd rather see walk through that door.
+My dearest friend. You're always welcome here, {player}.
+
+[greet.vendor.friend]
+{player}! For a friend like you, I'll show you the good stock.
+Ah, my favorite customer. And friend.
+
+[greet.vendor.bestfriend]
+{player}! For you I'd sell my own boots. Well, almost.
+
+[greet.guard.friend]
+{player}. Good to see a friendly face on this watch.
+
+[greet.guard.bestfriend]
+{player}! If anyone gives you trouble in town, you send them to me.
+
+[greet.banker.friend]
+{player}. Your vault and your friendship are both in excellent standing.

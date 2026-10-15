@@ -2,6 +2,27 @@
 
 A [BepInEx 5](https://github.com/BepInEx/BepInEx) plugin that makes Erenshor's sim players and NPCs feel more alive.
 
+## Lasting friendships
+
+Every sim and NPC builds a long-term friendship with each of your characters, saved between sessions.
+
+- **Tiers:** Stranger → Acquaintance → Friend → Good Friend → Close Friend → Best Friend.
+  You get a message when you reach a new one, and sims tell you so in their own words.
+- **What builds it:** fighting and leveling together, wiping together, talking (AI chat),
+  hailing NPCs, and friendly emotes (/wave, /thank, /hug...). /taunt hurts it. Gains are capped
+  per real day, so close friendships take weeks of real play, like real ones.
+- **They remember.** Each character keeps a journal of you: how you met, wipes you survived
+  together, the level you hit while grouped, the time you hugged them, and, with AI chat on,
+  what you talked about (the AI notes the one thing worth remembering after each conversation).
+- **Friends act like friends.** They greet you warmly, bring up memories ("remember when we wiped
+  together in Rottenfoot?"), wave you over when they see you, whisper hello when you log in
+  ("you're back! where've you been??"), and hug back properly. NPC friends greet you by name.
+  Sims' in-game opinion of you rises too, so friends are keener to group and invite you to guilds.
+- **AI chat remembers.** Conversations are saved, and the AI knows your friendship level, how long
+  you've known each other and their memories of you, so a best friend talks like one.
+- `/friends` lists your closest bonds; `/memories Name` (or target someone and type `/memories`)
+  shows what they remember.
+
 ## Talk to anyone (AI chat)
 
 With [Ollama](https://ollama.com) installed, you can talk to sims and NPCs in your own words and
@@ -130,7 +151,8 @@ The mod writes its files to `Erenshor/BepInEx/config/`:
    - `LivingNPCs/sims.txt`: sim player personas
    - `LivingNPCs/dialogue.txt`: every line NPCs can say
    - `LivingNPCs/memory/<character>.tsv`: which NPCs each character has met
-   - `LivingNPCs/memory/<character>.sims.tsv`: shared history with each sim, and sim friendships
+   - `LivingNPCs/memory/<character>.sims.tsv`: shared history with each sim, and sim-to-sim relationships
+   - `LivingNPCs/memory/<character>.friends.tsv`: your friendships, memories and saved conversations
 
 ## Writing dialogue
 

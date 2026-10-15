@@ -19,7 +19,12 @@ namespace LivingNPCs
 
         private const int HistoryLength = 8;
 
+        // Session-only fallback when friendships are off; otherwise conversations are saved with the friendship.
         private static readonly Dictionary<string, List<Ollama.Message>> History = new Dictionary<string, List<Ollama.Message>>();
+
+        private class Pending { public string Name; public SimPlayer Sim; public int Exchanges; public float LastAt; }
+        private static readonly Dictionary<string, Pending> ToSummarize = new Dictionary<string, Pending>();
+        private float nextSummaryCheck;
         private static readonly Queue<Action> Waiting = new Queue<Action>();
 
         // Messages about grouping, trading and so on are left entirely to the game's own sims.
@@ -39,6 +44,11 @@ namespace LivingNPCs
         {
             Ollama.Pump();
             if (Waiting.Count > 0 && Ready && !Ollama.Busy) Waiting.Dequeue()();
+            if (Time.time >= nextSummaryCheck)
+            {
+                nextSummaryCheck = Time.time + 10f;
+                SummarizeIdleConversations();
+            }
         }
 
         private void OnApplicationQuit()
@@ -170,8 +180,17 @@ namespace LivingNPCs
         private static void Send(string who, SimPlayer sim, NPC npc, Channel channel, string playerText)
         {
             Plugin.Bonds.UseCharacter(WorldContext.PlayerName);
-            string system = npc != null ? NpcPrompt(npc) : SimPrompt(who, sim, channel);
-            if (!History.TryGetValue(who, out List<Ollama.Message> history))
+            string key = npc != null ? Friendships.Npc(who) : Friendships.Sim(who);
+            bool remember = FriendshipEvents.On;
+            string friendship = remember ? FriendshipText(key, who) : "";
+            string system = (npc != null ? NpcPrompt(npc) : SimPrompt(who, sim, channel)).Replace("{friendship}", friendship);
+            List<Ollama.Message> history;
+            if (remember)
+            {
+                Plugin.FriendsNow().Meet(key, WorldContext.Zone);
+                history = Plugin.Friends.Get(key).Conversation;
+            }
+            else if (!History.TryGetValue(who, out history))
             {
                 history = new List<Ollama.Message>();
                 History[who] = history;
@@ -186,9 +205,21 @@ namespace LivingNPCs
             {
                 reply = Clean(reply, who, npc == null && SimLife.PersonaOf(sim) != "roleplayer");
                 if (string.IsNullOrEmpty(reply)) return;
-                history.Add(new Ollama.Message("user", heard));
-                history.Add(new Ollama.Message("assistant", reply));
-                while (history.Count > HistoryLength * 2) history.RemoveAt(0);
+                if (remember)
+                {
+                    Friendships friends = Plugin.FriendsNow();
+                    friends.AddConversation(key, new Ollama.Message("user", heard), new Ollama.Message("assistant", reply));
+                    friends.Add(key, 1f);
+                    if (!ToSummarize.TryGetValue(key, out Pending p)) ToSummarize[key] = p = new Pending { Name = who, Sim = sim };
+                    p.Exchanges++;
+                    p.LastAt = Time.time;
+                }
+                else
+                {
+                    history.Add(new Ollama.Message("user", heard));
+                    history.Add(new Ollama.Message("assistant", reply));
+                    while (history.Count > HistoryLength * 2) history.RemoveAt(0);
+                }
 
                 // A short pause to "type", so replies don't arrive impossibly fast.
                 float typing = Mathf.Clamp(reply.Length * 0.035f - (Time.time - asked), 0.3f, 3f);
@@ -236,6 +267,78 @@ namespace LivingNPCs
             if (stripActions) reply = Regex.Replace(reply, @"\*[^*]*\*", "").Trim();
             if (reply.Length > 240) reply = reply.Substring(0, 240).TrimEnd() + "...";
             return reply.Length == 0 ? null : reply;
+        }
+
+        // ================================================================ long-term memory
+
+        /// <summary>
+        /// Once a conversation has gone quiet, asks the model what the character should remember
+        /// from it, and keeps that as a memory of you.
+        /// </summary>
+        private static void SummarizeIdleConversations()
+        {
+            if (!Ready || Ollama.Busy || Waiting.Count > 0 || ToSummarize.Count == 0) return;
+            foreach (var pair in ToSummarize)
+            {
+                Pending p = pair.Value;
+                if (Time.time - p.LastAt < 60f) continue;
+                string key = pair.Key;
+                ToSummarize.Remove(key);
+                if (p.Exchanges < 2) return;
+
+                List<Ollama.Message> convo = Plugin.FriendsNow().Get(key).Conversation;
+                var transcript = new StringBuilder();
+                int start = Math.Max(0, convo.Count - p.Exchanges * 2);
+                for (int i = start; i < convo.Count; i++)
+                {
+                    transcript.Append(convo[i].Role == "assistant" ? p.Name + ": " : "").Append(convo[i].Content).Append('\n');
+                }
+                var tokens = BaseTokens();
+                tokens["name"] = p.Name;
+                tokens["transcript"] = transcript.ToString();
+                var messages = new List<Ollama.Message>
+                {
+                    new Ollama.Message("system", Fill(Section("ai.memory"), tokens)),
+                    new Ollama.Message("user", transcript.ToString()),
+                };
+                Ollama.Chat(messages, 50, summary =>
+                {
+                    summary = Clean(summary, p.Name, true);
+                    if (string.IsNullOrEmpty(summary) || summary.ToUpperInvariant().StartsWith("NONE")) return;
+                    summary = summary.TrimEnd('.', '!');
+                    if (summary.Length > 0) summary = char.ToLowerInvariant(summary[0]) + summary.Substring(1);
+                    Plugin.FriendsNow().Remember(key, summary);
+                    Plugin.Log.LogInfo(p.Name + " will remember: " + summary);
+                });
+                return;
+            }
+        }
+
+        private static string FriendshipText(string key, string who)
+        {
+            Friendships friends = Plugin.FriendsNow();
+            if (!friends.Knows(key)) return "You have never met " + WorldContext.PlayerName + " before.";
+            Friendship f = friends.Get(key);
+            int tier = Friendships.TierOf(f.Points);
+            var sb = new StringBuilder();
+            sb.Append("Your friendship with ").Append(WorldContext.PlayerName).Append(": ")
+              .Append(tier == 0 ? "barely know each other" : Friendships.TierNames[tier]).Append(". ");
+            if (f.Points < 0) sb.Append("You have bad feelings about them. ");
+            sb.Append("You first met ").Append(Friendships.Ago(f.FirstMet)).Append(" and last spoke ").Append(Friendships.Ago(f.LastSeen)).Append(". ");
+            if (f.Memories.Count > 0)
+            {
+                sb.Append("Things you remember about them: ");
+                int from = Math.Max(0, f.Memories.Count - 12);
+                for (int i = from; i < f.Memories.Count; i++)
+                {
+                    sb.Append(f.Memories[i].Value).Append(" (").Append(Friendships.Ago(f.Memories[i].Key)).Append(")");
+                    sb.Append(i < f.Memories.Count - 1 ? "; " : ". ");
+                }
+            }
+            sb.Append(tier >= 3 ? "Be warm and familiar, like an old friend; bring up shared memories when it fits."
+                    : tier >= 2 ? "Be friendly; you can mention shared memories now and then."
+                    : "You don't know them well yet.");
+            return sb.ToString();
         }
 
         // ================================================================ prompts

@@ -100,7 +100,21 @@ namespace LivingNPCs
             }
 
             NpcRecord past = Plugin.Memory.RecordHail(name);
-            string greeting = PickGreeting(bank, rng, npc, past);
+            string greeting = null;
+            if (FriendshipEvents.On)
+            {
+                Friendships friends = Plugin.FriendsNow();
+                string key = Friendships.Npc(name);
+                friends.Meet(key, WorldContext.Zone);
+                friends.Add(key, 0.5f);
+                int tier = friends.Tier(key);
+                if (tier >= 2 && rng.NextDouble() < 0.7)
+                {
+                    string id = Friendships.TierIds[tier];
+                    greeting = bank.PickFirst(rng, "npc." + name + ".greet." + id, "greet." + role + "." + id, "greet.tier." + id);
+                }
+            }
+            if (greeting == null) greeting = PickGreeting(bank, rng, npc, past);
             if (greeting != null)
             {
                 ReturnString(manager) = WorldContext.Fill(greeting, npc) + " " + reply;
