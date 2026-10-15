@@ -2,6 +2,35 @@
 
 A [BepInEx 5](https://github.com/BepInEx/BepInEx) plugin that makes Erenshor's sim players and NPCs feel more alive.
 
+## A living world
+
+Sims and NPCs now *do* things, not just say things. Actions appear in chat as emotes
+("Kessa sits down to rest for a moment.") and play real animations: dancing, sitting,
+kneeling, and a weapon flourish.
+
+- **Idle life.** Sims near you stretch, meditate, practice forms, read, dance, rummage for loot,
+  each in their persona's style. Two sims standing together wave, chat, clap each other on the
+  shoulder, or glare at each other, depending on whether they're friends or rivals.
+- **Reactions.** When a groupmate dies, others react in group chat ("{other}!! no!", or "lol {other}"
+  from a rival). They react when you die, when the group wipes, when you level (nearby strangers
+  cheer and clap too), when a groupmate levels, and after close fights.
+- **Moods.** Deaths and wipes drag a sim's mood down; level-ups and wins lift it. Mood changes what
+  they say and do, and fades back over several minutes.
+- **Friendships and rivalries.** Every pair of sims has a relationship that starts from their
+  personas (grumps and hype sims clash, wholesome sims get along with everyone) and grows as they
+  fight beside each other. It shapes group banter, replies and idle interactions.
+- **They remember you.** Each sim keeps a record of fights, deaths, wipes and level-ups with your
+  character, and brings it up: "still recovering from that wipe in Rottenfoot",
+  "we've done 42 fights together, crazy".
+- **Emotes.** /wave, /bow, /cheer, /laugh, /salute, /thank, /hug, /point, /cry, /flex, /shrug, /clap,
+  /nod, /sigh, /facepalm, /roar, /wink, /taunt, /comfort, /greet, /bye (type /emotes in game).
+  Target a sim and it responds in character; target an NPC and they react too. Emote at nobody and
+  nearby sims may notice. When you /dance, sims nearby may join in.
+- **NPCs act too.** NPCs turn to face you when you talk to them, often with a mannerism ("wipes
+  their hands on their apron"). Around town, vendors rearrange wares, guards pace, bankers stack coins.
+
+All of it lives in `life.txt`, with persona-, mood- and relationship-specific variants.
+
 ## Sim players with personalities
 
 Erenshor builds every generated sim from one blank template, so they all draw from the same
@@ -56,9 +85,11 @@ All the writing lives in one plain-text file you can edit and reload in game wit
 2. Put `LivingNPCs.dll` in `Erenshor/BepInEx/plugins/LivingNPCs/`.
 3. Launch the game. The mod writes its files to `Erenshor/BepInEx/config/`:
    - `njaysimmons.erenshor.livingnpcs.cfg`: settings (chatter frequency, radius, toggles)
+   - `LivingNPCs/life.txt`: actions, reactions, banter, memories and emotes
    - `LivingNPCs/sims.txt`: sim player personas
    - `LivingNPCs/dialogue.txt`: every line NPCs can say
-   - `LivingNPCs/memory/<character>.tsv`: who each character has met
+   - `LivingNPCs/memory/<character>.tsv`: which NPCs each character has met
+   - `LivingNPCs/memory/<character>.sims.tsv`: shared history with each sim, and sim friendships
 
 ## Writing dialogue
 
@@ -98,4 +129,9 @@ Game assemblies are referenced from your install and are never committed to this
   25 to 60 seconds, with a per-NPC cooldown so nobody repeats themselves.
 - `SimVoices.cs` patches `SimPlayerMngr.LoadSimPlayerTemplate`, which runs as each sim spawns, to set
   its persona, and `SimPlayerLanguage.GetGeneric` to vary small-talk shouts.
+- `SimLife.cs` watches the player, group and nearby sims twice a second for deaths, wipes,
+  level-ups and fights ending, and runs idle actions and group banter. `SimBonds.cs` stores
+  shared history, relationships and moods.
+- `PlayerEmotes.cs` patches `TypeText.CheckCommands` to add emote commands, and
+  `SimPlayerLanguage.GetTargetedHello` so greetings can bring up shared memories.
 - `NpcMemory.cs` keeps the per-character meeting counts and last-seen times.

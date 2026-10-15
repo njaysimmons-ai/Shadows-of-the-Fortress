@@ -108,8 +108,16 @@ namespace LivingNPCs
                 return;
             }
             nextAllowed[speaker] = now + Plugin.PerNpcCooldownSeconds.Value;
-            string text = speaker.NPCName + " says: " + WorldContext.Fill(line, speaker);
-            UpdateSocialLog.LogAdd(new ChatLogLine(text, ChatLogLine.LogType.Say));
+            line = WorldContext.Fill(Speech.TakeAnimation(line, out _), speaker);
+            // Lines written as *does something* are actions, shown as emotes rather than speech.
+            if (line.StartsWith("*") && line.EndsWith("*") && line.Length > 2)
+            {
+                string action = line.Substring(1, line.Length - 2).Trim();
+                if (!action.EndsWith(".") && !action.EndsWith("!") && !action.EndsWith("?")) action += ".";
+                Speech.Emote(speaker.NPCName, action);
+                return;
+            }
+            UpdateSocialLog.LogAdd(new ChatLogLine(speaker.NPCName + " says: " + line, ChatLogLine.LogType.Say));
         }
 
         private static string PickLine(NPC npc, bool closeToPlayer)
@@ -135,6 +143,13 @@ namespace LivingNPCs
             string role = WorldContext.RoleOf(npc).ToString().ToLowerInvariant();
             string time = WorldContext.TimeOfDay;
             string zone = WorldContext.Zone;
+
+            // Sometimes they do something instead of saying something.
+            if (rng.NextDouble() < 0.4)
+            {
+                string action = bank.PickAny(rng, new[] { "action." + role, "action." + role + "." + time, "action.zone." + zone, "action" });
+                if (action != null) return "*" + action.TrimEnd('.') + "*";
+            }
             return bank.PickAny(rng, new[]
             {
                 "ambient.zone." + zone,

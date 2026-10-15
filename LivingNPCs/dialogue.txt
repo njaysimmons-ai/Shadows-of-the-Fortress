@@ -278,3 +278,80 @@ Quiet out here. Good for thinking.
 
 [npc.Prestigio Valusha.greet]
 Ah, {player}. Your vault awaits, as faithful as ever.
+
+# ------------------------------------------------------------------ actions
+# What NPCs DO. Shown as emotes: "Old Grell wipes down the counter."
+#   action.hail.<role>    sometimes, as they answer you (role: vendor, guard, banker, townsfolk)
+#   action.hail.hostile   when they refuse to talk to you
+#   action.<role>         on their own, when you're nearby (also action.<role>.<time>, action.zone.<Zone>)
+#   npc.<Name>.action.hail  for one specific NPC
+
+[action.hail]
+looks up at you.
+turns to face you.
+sets down what they were doing.
+pauses mid-task.
+
+[action.hail.vendor]
+wipes their hands on their apron.
+straightens a row of goods.
+gives you a practiced smile.
+sizes up your coin purse at a glance.
+
+[action.hail.guard]
+looks you up and down.
+shifts their grip on their weapon.
+stands a little straighter.
+
+[action.hail.banker]
+adjusts their spectacles.
+closes a ledger.
+dips a quill in ink.
+
+[action.hail.townsfolk]
+brushes off their clothes.
+smiles politely.
+looks surprised to be spoken to.
+
+[action.hail.hostile]
+turns their back on you.
+spits on the ground.
+glares at you.
+reaches for a weapon.
+
+[action]
+stretches.
+looks up at the sky.
+brushes dust from their clothes.
+yawns.
+
+[action.vendor]
+rearranges their wares.
+counts the day's takings.
+haggles with an invisible customer.
+dusts off a shelf.
+holds up an item for passersby to see.
+
+[action.guard]
+paces back and forth.
+scans the area carefully.
+leans on their spear.
+adjusts their helmet.
+
+[action.guard.night]
+peers into the darkness.
+stifles a yawn.
+
+[action.banker]
+counts coins into neat stacks.
+scribbles in a ledger.
+squints at a coin, then bites it.
+
+[action.townsfolk]
+sweeps the ground.
+chats with a neighbor.
+carries a basket of goods.
+sits and rests their feet.
+
+[action.zone.Azure]
+watches the ships in the harbour.

@@ -1,0 +1,882 @@
+# Living NPCs: the living world
+#
+# What sims and NPCs DO: actions, reactions, group banter, memories and emotes.
+# Press Ctrl+F8 in game to reload.
+#
+# Sections can be specialised. The mod tries, in order:
+#   [section.<persona>]     e.g. [react.death.grump]       (personas are listed in sims.txt)
+#   [section.mood.<mood>]   e.g. [react.death.mood.low]    (moods: low, high)
+#   [section]
+# Some also have relationship versions: [react.death.friend], [react.death.rival].
+#
+# Action lines are written as what the sim does, and appear as an emote:  "Bob stretches."
+# Start an action with an animation tag to play it:  [dance] [sit] [flourish] [kneel]
+#
+# Tokens: {player} you  {other} another sim  {zone} current zone  {count} a number
+#         {wipezone} where you last wiped together  {lastzone} where you last fought together
+
+# ======================================================================
+# IDLE ACTIONS: sims near you, doing their own thing
+# ======================================================================
+
+[action.idle]
+stretches and rolls their shoulders.
+checks their bags, frowning.
+[sit] sits down to rest for a moment.
+[sit] sits and meditates quietly.
+[kneel] kneels to fix a loose bootstrap.
+looks around, getting their bearings.
+[flourish] practices a few weapon forms.
+counts their coins, twice.
+squints at something in the distance.
+yawns enormously.
+[kneel] picks a flower and tucks it behind an ear.
+hums to themselves.
+consults a crumpled map.
+polishes their gear with a sleeve.
+
+[action.idle.mood.low]
+[sit] slumps down and stares at nothing.
+kicks a rock, hard.
+sighs heavily.
+mutters something under their breath.
+
+[action.idle.mood.high]
+[dance] does a little victory dance.
+whistles a cheerful tune.
+grins at nobody in particular.
+
+[action.idle.chill]
+[sit] sits down and watches the clouds.
+leans against the nearest wall.
+[dance] sways lazily to some unheard music.
+
+[action.idle.hype]
+[dance] bursts into a celebratory dance.
+[flourish] shadowboxes an imaginary enemy.
+bounces on their heels, impatient.
+
+[action.idle.oldschool]
+[sit] sits to med, eyes closed.
+checks the spawn timers in a worn notebook.
+[kneel] inspects the ground for tracks.
+
+[action.idle.roleplayer]
+[kneel] kneels in silent prayer.
+recites an old verse under their breath.
+[flourish] salutes the horizon.
+traces a sigil in the air.
+
+[action.idle.tryhard]
+[flourish] runs through their rotation on a training dummy that isn't there.
+mutters numbers under their breath.
+checks their gear stats, again.
+
+[action.idle.grump]
+glares at a passing squirrel.
+complains to no one in particular.
+crosses their arms and scowls.
+
+[action.idle.newbie]
+opens and closes their spellbook, looking confused.
+walks into a wall, then backs up.
+stares at their map, turning it upside down.
+
+[action.idle.jokester]
+[dance] does a ridiculous dance.
+pretends to be a statue.
+juggles three rocks, then drops them.
+
+[action.idle.wholesome]
+[kneel] pats a stray animal.
+waves at everyone who passes.
+hands out a spare bandage to nobody in particular.
+
+[action.idle.lorehound]
+reads from a battered book.
+[kneel] examines some old carvings.
+scribbles notes about the stonework.
+
+[action.idle.lootgoblin]
+[kneel] rummages through a pile of junk.
+holds a shiny trinket up to the light.
+counts their loot, lips moving.
+
+[action.idle.terse]
+nods once.
+checks the time.
+
+[action.toplayer]
+nods at you.
+looks you up and down.
+gives you a little wave.
+glances at your gear, impressed.
+steps aside to let you pass.
+
+[action.toplayer.grump]
+eyes you suspiciously.
+grunts at you.
+
+[action.toplayer.hype]
+[flourish] gives you an enthusiastic thumbs up!
+
+[action.toplayer.newbie]
+stares at you in awe.
+
+[action.toplayer.roleplayer]
+bows to you deeply.
+
+[action.social]
+waves at {other}.
+chats quietly with {other}.
+shares a joke with {other}.
+points something out to {other}.
+nods at {other}.
+
+[action.social.friend]
+claps {other} on the shoulder.
+laughs at something {other} said.
+[dance] dances with {other}.
+hands {other} a snack.
+
+[action.social.rival]
+glares at {other}.
+bumps {other} with their shoulder.
+rolls their eyes at {other}.
+pointedly ignores {other}.
+
+[action.social.back]
+waves back at {other}.
+nods at {other}.
+smiles at {other}.
+
+[action.social.back.friend]
+grins at {other}.
+laughs along with {other}.
+
+[action.social.back.rival]
+scowls at {other}.
+mutters something rude about {other}.
+
+# ======================================================================
+# REACTIONS
+# ======================================================================
+
+[react.death]
+{other}!! no!
+rip {other}
+{other} went down!
+man down, {other} is out
+someone rez {other}
+
+[react.death.friend]
+NO {other}! i'll avenge you
+{other}!!! hold on buddy
+not {other}, they were my favorite
+
+[react.death.rival]
+lol {other}
+called it. {other} always pulls too much
+{other} down. can't say i'm shocked
+
+[react.death.tryhard]
+{other} died, that's a dps loss
+{other} you were standing in it
+
+[react.death.grump]
+great, {other} is dead. now what
+typical
+
+[react.death.roleplayer]
+{other} has fallen! We fight on in their name!
+
+[react.death.wholesome]
+oh no {other}! we'll get you back up
+you did great {other}, rest a sec
+
+[react.death.newbie]
+wait {other} died?? are we gonna die too
+
+[react.playerdeath]
+{player}!! get up!
+ah no {player}
+we lost {player}!
+{player} is down, careful everyone
+
+[react.playerdeath.tryhard]
+{player} what happened there
+{player} you need better gear
+
+[react.playerdeath.grump]
+and there goes {player}
+great. {player}'s dead
+
+[react.playerdeath.wholesome]
+{player}! don't worry, we've got you
+it's okay {player}, it happens
+
+[react.playerdeath.jokester]
+{player} has left the chat
+press F for {player}
+
+[react.playerdeath.witness]
+winces.
+looks away.
+shakes their head sadly.
+gasps.
+
+[react.wipe]
+well... that went poorly
+wipe. everyone ok?
+let's not do that again
+ow. my pride
+corpse run time, everyone
+
+[react.wipe.mood.low]
+i think i need a break after that
+i'm so done
+
+[react.wipe.tryhard]
+ok who pulled that. we need a strategy
+that wipe was avoidable
+
+[react.wipe.grump]
+told you
+this is why i solo
+
+[react.wipe.wholesome]
+it's ok team, we'll get it next time!
+
+[react.wipe.jokester]
+well that's one way to explore the afterlife
+
+[react.wipe.oldschool]
+That's a wipe. Corpses first, then we talk about pulls.
+
+[react.wipe.roleplayer]
+We are defeated... but not broken!
+
+[react.levelup.player]
+gz {player}!
+grats {player}!!
+DING! nice one {player}
+congrats on the level!
+look at you go {player}
+
+[react.levelup.player.tryhard]
+gz, on pace
+nice, keep it up
+
+[react.levelup.player.grump]
+gz i guess
+
+[react.levelup.player.hype]
+GZ {player}!!! LETS GOOOO
+
+[react.levelup.player.roleplayer]
+Your strength grows, {player}! Well done!
+
+[react.levelup.witness]
+[flourish] cheers for you!
+claps for you.
+[dance] does a happy dance for you.
+whistles approvingly.
+
+[react.levelup.witness.say]
+gz!
+grats!
+nice ding
+congrats stranger
+
+[react.levelup.sim]
+gz {other}!
+grats {other}
+nice ding {other}
+
+[react.levelup.sim.friend]
+GZ {other}!! knew you'd get there
+proud of you {other}
+
+[react.levelup.sim.rival]
+gz {other}... finally
+about time {other}
+
+[react.fight.won]
+nice
+good pull
+ez
+too easy
+that went well
+one down
+
+[react.fight.won.tryhard]
+efficient. next
+keep chain pulling
+
+[react.fight.won.grump]
+finally
+
+[react.fight.won.hype]
+WE'RE UNSTOPPABLE
+
+[react.fight.won.roleplayer]
+Victory is ours!
+
+[react.fight.close]
+that was too close
+phew
+i thought we were dead
+let's med up before the next one
+need a minute to recover
+
+[react.fight.close.tryhard]
+we need to be more careful with pulls
+
+[react.fight.close.grump]
+nearly died thanks to that pull
+
+[react.fight.close.newbie]
+my heart is pounding lol
+
+# ======================================================================
+# GROUP BANTER (out of combat)
+# ======================================================================
+
+[banter]
+how is everyone doing on mana?
+anyone need a buff?
+this zone is nice
+we're making good progress
+what's everyone's goal for tonight?
+i should probably fix my gear soon
+brb, grabbing water
+anyone else hungry?
+good group tonight
+
+[banter.mood.low]
+i'm kinda done for tonight honestly
+not feeling it today
+my luck is terrible lately
+
+[banter.mood.high]
+i'm having a great time
+this group is awesome
+feeling lucky tonight
+
+[banter.tryhard]
+we should move to a better camp soon
+i'm tracking our xp rate, it's decent
+let's pull faster
+
+[banter.roleplayer]
+Tell me, friends, what drives you to this road?
+I sense the spirits favor us today.
+
+[banter.lorehound]
+did anyone else see those carvings back there?
+i wonder what Brax would think of this place
+
+[banter.newbie]
+is this a good place to level? i'm just following you lol
+what should i be doing with my stats?
+
+[banter.grump]
+my feet hurt
+how much longer are we doing this
+
+[banter.jokester]
+if we wipe i'm blaming {player}
+anyone else's armor squeak or just mine
+
+[banter.wholesome]
+thanks for the group {player}, this is fun
+you're all doing great
+
+[banter.friend]
+{other} we should duo sometime
+{other} remember that one time? lol
+{other} you're carrying this group
+glad you're here {other}
+
+[banter.rival]
+{other} try not to pull the whole zone this time
+{other} you're standing in the way again
+{other} maybe let the tank tank
+{other} nice of you to finally show up
+
+[banter.neutral]
+{other} what class is that again?
+{other} where are you from?
+{other} nice gear
+{other} how long have you been playing?
+
+[banter.reply.friend]
+haha {other} always
+you know it {other}
+anytime {other}
+
+[banter.reply.rival]
+mind your own business {other}
+says you {other}
+whatever {other}
+at least i'm not you {other}
+
+[banter.reply.neutral]
+thanks {other}
+not long
+lol yeah
+hm, good question
+
+[banter.zone.Azure]
+port azure always smells like fish
+we should hit the auction house after this
+
+[banter.zone.Brake]
+something is watching us in here
+stay close in the brake
+
+[banter.zone.Rottenfoot]
+i can't get the swamp smell out of my boots
+
+[banter.zone.Loomingwood]
+which way is out again?
+
+# ======================================================================
+# MEMORIES: things you and a sim went through together
+# ======================================================================
+
+[memory.greet.wipe]
+still recovering from that wipe in {wipezone}
+we really need a rematch in {wipezone}
+not going back to {wipezone} without a plan
+
+[memory.greet.playerdeaths]
+you've died like {count} times with me around, be careful lol
+try not to die this time, that's {count} times now
+
+[memory.greet.simdeaths]
+i died {count} times last we grouped, gonna do better
+hope you brought a healer, i've died {count} times with you lol
+
+[memory.greet.fights]
+we've done {count} fights together, crazy
+partner in crime! {count} fights and counting
+
+[memory.greet.levels]
+i was there for {count} of your dings!
+been watching you level, proud of you
+
+[memory.banter.wipe]
+remember that wipe in {wipezone}? never again
+we've wiped {count} times together lol
+at least it's not as bad as {wipezone}
+
+[memory.banter.playerdeaths]
+{player} you've died {count} times with me now
+keeping count, {player}: {count} deaths
+
+[memory.banter.simdeaths]
+i've died {count} times in your groups, not that i'm counting
+
+[memory.banter.fights]
+{count} fights together and we're still alive
+we make a good team {player}, {count} fights in
+
+[memory.banter.levels]
+i've seen you ding {count} times now {player}
+
+# ======================================================================
+# EMOTES: type /emotes in game to see them all
+# For each: self (no target), target (with a target), anim (your animation),
+#           react (what a sim does back), reply (what a sim says), npc (what an NPC does back),
+#           npcsay (what an NPC says, sometimes)
+# ======================================================================
+
+[emote.any.npc]
+nods at you.
+glances at you.
+acknowledges you with a look.
+
+[emote.dance.react]
+[dance] joins the dance!
+[dance] dances along with you.
+[dance] busts out some moves.
+
+[emote.dance.react.grump]
+rolls their eyes at your dancing.
+
+[emote.dance.react.tryhard]
+watches you dance, unimpressed.
+
+# --- wave
+[emote.wave.self]
+You wave.
+[emote.wave.target]
+You wave at {target}.
+[emote.wave.react]
+waves back at you.
+waves enthusiastically.
+[emote.wave.react.grump]
+gives you a half-hearted wave.
+[emote.wave.react.terse]
+nods.
+[emote.wave.reply]
+hey {player}!
+hi!
+o/
+[emote.wave.reply.roleplayer]
+Well met, {player}!
+[emote.wave.npc]
+waves back.
+nods politely.
+[emote.wave.npcsay]
+Good day to you.
+Hello there.
+
+# --- bow
+[emote.bow.self]
+You bow.
+[emote.bow.target]
+You bow before {target}.
+[emote.bow.anim]
+kneel
+[emote.bow.react]
+bows in return.
+returns the bow.
+[emote.bow.react.jokester]
+curtsies dramatically.
+[emote.bow.reply]
+oh, thank you!
+how formal!
+[emote.bow.reply.roleplayer]
+You honor me, {player}.
+[emote.bow.npc]
+bows in return.
+inclines their head graciously.
+
+# --- cheer
+[emote.cheer.self]
+You cheer!
+[emote.cheer.target]
+You cheer for {target}!
+[emote.cheer.anim]
+flourish
+[emote.cheer.react]
+[flourish] cheers along!
+[flourish] pumps a fist in the air!
+[emote.cheer.react.grump]
+looks at you like you've lost your mind.
+[emote.cheer.reply]
+woo!
+yeah!!
+[emote.cheer.reply.hype]
+LETS GOOOO
+[emote.cheer.npc]
+smiles at your enthusiasm.
+
+# --- laugh
+[emote.laugh.self]
+You laugh.
+[emote.laugh.target]
+You laugh at {target}.
+[emote.laugh.react]
+laughs along.
+chuckles.
+[emote.laugh.react.grump]
+glares at you.
+[emote.laugh.reply]
+lol what
+haha
+what's so funny
+[emote.laugh.reply.grump]
+something funny?
+[emote.laugh.npc]
+gives you a puzzled look.
+frowns at you.
+
+# --- salute
+[emote.salute.self]
+You salute.
+[emote.salute.target]
+You salute {target}.
+[emote.salute.anim]
+flourish
+[emote.salute.react]
+[flourish] salutes you back.
+snaps a salute.
+[emote.salute.reply]
+o7
+at ease
+[emote.salute.npc]
+salutes you crisply.
+[emote.salute.npcsay]
+Carry on.
+
+# --- thank
+[emote.thank.self]
+You give thanks.
+[emote.thank.target]
+You thank {target}.
+[emote.thank.react]
+smiles at you.
+nods, pleased.
+[emote.thank.reply]
+np!
+anytime
+you're welcome!
+[emote.thank.reply.grump]
+yeah yeah
+[emote.thank.reply.roleplayer]
+The pleasure is mine.
+[emote.thank.npc]
+smiles warmly.
+[emote.thank.npcsay]
+Think nothing of it.
+
+# --- hug
+[emote.hug.self]
+You hug yourself. It's been a long day.
+[emote.hug.target]
+You hug {target}.
+[emote.hug.react]
+hugs you back.
+pats you on the back.
+[emote.hug.react.grump]
+stiffens awkwardly.
+[emote.hug.react.terse]
+tolerates the hug.
+[emote.hug.reply]
+aww
+<3
+[emote.hug.reply.grump]
+...ok that's enough
+[emote.hug.npc]
+pats you awkwardly on the back.
+steps back, surprised.
+
+# --- point
+[emote.point.self]
+You point.
+[emote.point.target]
+You point at {target}.
+[emote.point.react]
+looks where you're pointing.
+looks behind them.
+[emote.point.reply]
+what?
+what is it?
+[emote.point.reply.newbie]
+is something behind me?? 
+[emote.point.npc]
+looks where you're pointing.
+[emote.point.npcsay]
+What? What is it?
+
+# --- cry
+[emote.cry.self]
+You cry.
+[emote.cry.target]
+You cry on {target}'s shoulder.
+[emote.cry.react]
+pats your shoulder.
+offers you a handkerchief.
+[emote.cry.react.grump]
+looks uncomfortable.
+[emote.cry.reply]
+hey, it's ok
+you ok?
+[emote.cry.reply.wholesome]
+oh no, what's wrong? want to group up?
+[emote.cry.npc]
+looks at you with concern.
+[emote.cry.npcsay]
+There, there.
+
+# --- flex
+[emote.flex.self]
+You flex your muscles.
+[emote.flex.target]
+You flex at {target}.
+[emote.flex.anim]
+flourish
+[emote.flex.react]
+[flourish] flexes back.
+is not impressed.
+[emote.flex.react.hype]
+[flourish] flexes even harder!
+[emote.flex.reply]
+nice gains
+lol ok
+[emote.flex.npc]
+raises an eyebrow.
+
+# --- shrug
+[emote.shrug.self]
+You shrug.
+[emote.shrug.target]
+You shrug at {target}.
+[emote.shrug.react]
+shrugs back.
+[emote.shrug.reply]
+same
+no idea either
+[emote.shrug.npc]
+shrugs.
+
+# --- clap
+[emote.clap.self]
+You clap.
+[emote.clap.target]
+You applaud {target}.
+[emote.clap.react]
+takes a bow.
+[kneel] bows dramatically.
+[emote.clap.reply]
+thank you, thank you
+why thank you
+[emote.clap.npc]
+looks pleased.
+
+# --- nod
+[emote.nod.self]
+You nod.
+[emote.nod.target]
+You nod at {target}.
+[emote.nod.react]
+nods back.
+[emote.nod.npc]
+nods back.
+
+# --- sigh
+[emote.sigh.self]
+You sigh.
+[emote.sigh.target]
+You sigh at {target}.
+[emote.sigh.react]
+sighs too.
+gives you a sympathetic look.
+[emote.sigh.reply]
+long day?
+i feel that
+[emote.sigh.npc]
+gives you a sympathetic look.
+
+# --- facepalm
+[emote.facepalm.self]
+You facepalm.
+[emote.facepalm.target]
+You facepalm at {target}.
+[emote.facepalm.react]
+looks sheepish.
+looks around innocently.
+[emote.facepalm.reply]
+what did i do
+it wasn't me
+[emote.facepalm.npc]
+looks confused.
+
+# --- roar
+[emote.roar.self]
+You let out a mighty roar!
+[emote.roar.target]
+You roar at {target}!
+[emote.roar.anim]
+flourish
+[emote.roar.react]
+jumps back, startled!
+[flourish] roars back!
+[emote.roar.react.newbie]
+nearly falls over in fright.
+[emote.roar.reply]
+WHOA
+calm down lol
+[emote.roar.npc]
+jumps back, startled.
+[emote.roar.npcsay]
+By the gods! You scared me half to death.
+
+# --- wink
+[emote.wink.self]
+You wink.
+[emote.wink.target]
+You wink at {target}.
+[emote.wink.react]
+winks back.
+blushes.
+[emote.wink.react.grump]
+looks away, unimpressed.
+[emote.wink.reply]
+;)
+oh my
+[emote.wink.npc]
+blushes slightly.
+pretends not to notice.
+
+# --- taunt
+[emote.taunt.self]
+You taunt everyone nearby.
+[emote.taunt.target]
+You taunt {target}.
+[emote.taunt.react]
+glares at you.
+[flourish] squares up to you.
+[emote.taunt.react.wholesome]
+looks hurt.
+[emote.taunt.reply]
+oh it's ON
+bring it
+say that again
+[emote.taunt.reply.jokester]
+you'll regret that lol
+[emote.taunt.npc]
+narrows their eyes at you.
+[emote.taunt.npcsay]
+Watch yourself.
+
+# --- comfort
+[emote.comfort.self]
+You look for someone to comfort.
+[emote.comfort.target]
+You comfort {target}.
+[emote.comfort.react]
+smiles gratefully.
+leans on your shoulder for a moment.
+[emote.comfort.reply]
+thanks, i needed that
+you're a good friend
+[emote.comfort.npc]
+smiles gratefully.
+
+# --- greet
+[emote.greet.self]
+You greet everyone warmly.
+[emote.greet.target]
+You greet {target} warmly.
+[emote.greet.react]
+greets you warmly.
+waves hello.
+[emote.greet.reply]
+hey {player}!
+good to see you
+[emote.greet.reply.roleplayer]
+Greetings, {player}! Well met!
+[emote.greet.npc]
+greets you with a smile.
+[emote.greet.npcsay]
+Welcome, friend.
+
+# --- bye
+[emote.bye.self]
+You wave goodbye.
+[emote.bye.target]
+You wave goodbye to {target}.
+[emote.bye.react]
+waves goodbye.
+[emote.bye.reply]
+cya!
+take care {player}
+later!
+[emote.bye.npc]
+waves farewell.
+[emote.bye.npcsay]
+Safe travels.

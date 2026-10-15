@@ -63,6 +63,19 @@ namespace LivingNPCs
             Random rng = Plugin.Rng;
             string name = npc.NPCName;
 
+            // Whoever you talk to looks at you, and sometimes does something as they answer.
+            Speech.Face(npc, GameData.PlayerControl.transform.position);
+            string role = WorldContext.RoleOf(npc).ToString().ToLowerInvariant();
+            string mannerism = reply == HostileReply
+                ? bank.PickFirst(rng, "npc." + name + ".action.hostile", "action.hail.hostile")
+                : rng.NextDouble() < Plugin.HailActionChance.Value
+                    ? bank.PickFirst(rng, "npc." + name + ".action.hail", "action.hail." + role, "action.hail")
+                    : null;
+            if (mannerism != null)
+            {
+                Speech.Emote(name, WorldContext.Fill(Speech.TakeAnimation(mannerism, out _), npc));
+            }
+
             if (reply == HostileReply)
             {
                 string cold = bank.PickFirst(rng, "npc." + name + ".hostile", "hostile");

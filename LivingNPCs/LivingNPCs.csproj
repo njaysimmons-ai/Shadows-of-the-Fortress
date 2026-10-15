@@ -31,11 +31,16 @@
       <HintPath>$(ManagedDir)\UnityEngine.CoreModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="UnityEngine.AnimationModule">
+      <HintPath>$(ManagedDir)\UnityEngine.AnimationModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Include="dialogue.txt" LogicalName="LivingNPCs.dialogue.txt" />
     <EmbeddedResource Include="sims.txt" LogicalName="LivingNPCs.sims.txt" />
+    <EmbeddedResource Include="life.txt" LogicalName="LivingNPCs.life.txt" />
   </ItemGroup>
 
   <!-- Copies the built plugin into BepInEx/plugins when the game folder exists. -->

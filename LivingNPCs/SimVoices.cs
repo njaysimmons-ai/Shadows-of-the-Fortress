@@ -48,6 +48,14 @@ namespace LivingNPCs
 
         public static int PersonaCount => personas.Count;
 
+        /// <summary>The persona id this sim was given, or null for hand-made sims and sims without one.</summary>
+        public static string PersonaOf(SimPlayer sim)
+        {
+            if (sim == null) return null;
+            SimPlayerLanguage language = sim.GetComponent<SimPlayerLanguage>();
+            return language != null && Assigned.TryGetValue(language, out Persona p) ? p.Id : null;
+        }
+
         public static void Load(DialogueBank source)
         {
             bank = source;

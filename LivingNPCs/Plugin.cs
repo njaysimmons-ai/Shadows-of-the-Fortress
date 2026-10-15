@@ -18,10 +18,13 @@ namespace LivingNPCs
         internal static ManualLogSource Log;
         internal static DialogueBank Bank;
         internal static NpcMemory Memory;
+        internal static DialogueBank Life = new DialogueBank();
+        internal static SimBonds Bonds;
         internal static readonly System.Random Rng = new System.Random();
 
         internal static ConfigEntry<bool> EnableGreetings;
         internal static ConfigEntry<bool> EnableAmbient;
+        internal static ConfigEntry<float> HailActionChance;
         internal static ConfigEntry<float> FlavorChance;
         internal static ConfigEntry<int> RegularAfter;
         internal static ConfigEntry<double> AbsenceDays;
@@ -34,10 +37,20 @@ namespace LivingNPCs
         internal static ConfigEntry<float> SimPersonaShare;
         internal static ConfigEntry<float> SimSmallTalkShare;
         internal static ConfigEntry<bool> LogSimPersonas;
+        internal static ConfigEntry<bool> EnableLife;
+        internal static ConfigEntry<bool> EnableEmotes;
+        internal static ConfigEntry<float> IdleMinSeconds;
+        internal static ConfigEntry<float> IdleMaxSeconds;
+        internal static ConfigEntry<float> BanterMinSeconds;
+        internal static ConfigEntry<float> BanterMaxSeconds;
+        internal static ConfigEntry<float> ReactionChance;
+        internal static ConfigEntry<float> PostFightChance;
+        internal static ConfigEntry<float> MemoryChance;
         internal static ConfigEntry<KeyboardShortcut> ReloadKey;
 
         private string dialoguePath;
         private string simsPath;
+        private string lifePath;
 
         private void Awake()
         {
@@ -48,6 +61,7 @@ namespace LivingNPCs
             RegularAfter = Config.Bind("Greetings", "RegularAfterHails", 10, "After this many conversations an NPC treats you as a regular.");
             AbsenceDays = Config.Bind("Greetings", "AbsenceDays", 3.0, "Real-world days away before an NPC remarks that it has been a while.");
 
+            HailActionChance = Config.Bind("Greetings", "ActionChance", 0.45f, "Chance (0-1) an NPC does something (wipes the counter, looks up from a book) as they answer you.");
             EnableAmbient = Config.Bind("Ambient", "Enabled", true, "Friendly NPCs near you speak up on their own.");
             AmbientRadius = Config.Bind("Ambient", "Radius", 15f, "How close (in metres) an NPC must be for you to overhear it.");
             AmbientMinSeconds = Config.Bind("Ambient", "MinSecondsBetweenLines", 25f, "Shortest gap between overheard lines.");
@@ -60,6 +74,16 @@ namespace LivingNPCs
             SimSmallTalkShare = Config.Bind("Sim Players", "SmallTalkShare", 0.6f, "Chance (0-1) a sim's small-talk shout uses its own lines instead of the zone's shared comments.");
             LogSimPersonas = Config.Bind("Sim Players", "LogPersonas", true, "Write each sim's persona to the BepInEx log as it spawns.");
 
+            EnableLife = Config.Bind("Living World", "Enabled", true, "Sims act on their own, react to deaths, wipes and level-ups, banter in groups, and remember your adventures.");
+            EnableEmotes = Config.Bind("Living World", "EmoteCommands", true, "Adds /wave, /bow, /cheer and other emotes that sims and NPCs react to. Type /emotes for the list.");
+            IdleMinSeconds = Config.Bind("Living World", "IdleActionMinSeconds", 15f, "Shortest gap between sims near you doing something on their own.");
+            IdleMaxSeconds = Config.Bind("Living World", "IdleActionMaxSeconds", 40f, "Longest gap between sims near you doing something on their own.");
+            BanterMinSeconds = Config.Bind("Living World", "GroupBanterMinSeconds", 90f, "Shortest gap between group chatter while out of combat.");
+            BanterMaxSeconds = Config.Bind("Living World", "GroupBanterMaxSeconds", 200f, "Longest gap between group chatter while out of combat.");
+            ReactionChance = Config.Bind("Living World", "ReactionChance", 0.6f, "Chance (0-1) each groupmate reacts when someone dies.");
+            PostFightChance = Config.Bind("Living World", "PostFightChance", 0.3f, "Chance (0-1) someone comments after a fight.");
+            MemoryChance = Config.Bind("Living World", "MemoryGreetingChance", 0.4f, "Chance (0-1) a sim's greeting mentions something you went through together.");
+
             ReloadKey = Config.Bind("General", "ReloadDialogueKey", new KeyboardShortcut(KeyCode.F8, KeyCode.LeftControl),
                 "Reloads dialogue.txt without restarting the game.");
 
@@ -67,11 +91,15 @@ namespace LivingNPCs
             Directory.CreateDirectory(folder);
             dialoguePath = Path.Combine(folder, "dialogue.txt");
             simsPath = Path.Combine(folder, "sims.txt");
+            lifePath = Path.Combine(folder, "life.txt");
             Memory = new NpcMemory(Path.Combine(folder, "memory"));
+            Bonds = new SimBonds(Path.Combine(folder, "memory"));
             LoadDialogue();
 
             new Harmony(Guid).PatchAll(typeof(Plugin).Assembly);
+            gameObject.AddComponent<Scheduler>();
             gameObject.AddComponent<AmbientChatter>();
+            gameObject.AddComponent<SimLife>();
             Log.LogInfo("Living NPCs " + Version + " loaded.");
         }
 
@@ -88,16 +116,20 @@ namespace LivingNPCs
         private void OnApplicationQuit()
         {
             Memory.Save();
+            Bonds.Save();
         }
 
         private void OnApplicationPause(bool paused)
         {
-            if (paused) Memory.Save();
+            if (!paused) return;
+            Memory.Save();
+            Bonds.Save();
         }
 
         private void LoadDialogue()
         {
             Bank = LoadText(dialoguePath, "dialogue.txt") ?? Bank ?? new DialogueBank();
+            Life = LoadText(lifePath, "life.txt") ?? Life;
             DialogueBank sims = LoadText(simsPath, "sims.txt");
             if (sims != null)
             {
