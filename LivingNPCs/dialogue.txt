@@ -1,0 +1,280 @@
+# Living NPCs: dialogue
+#
+# Edit freely. In game, press Ctrl+F8 to reload this file without restarting.
+#
+# Each [section] holds lines; one is picked at random. Tokens filled in when spoken:
+#   {player} your name     {class} your class    {level} your level
+#   {npc}    the speaker   {zone}  scene name    {time}  morning/afternoon/evening/night
+#
+# GREETINGS are added to the front of an NPC's normal reply when you hail them.
+#   greet.first          never spoken to this character before
+#   greet.returning      spoken a few times
+#   greet.regular        spoken often (see RegularAfterHails in the config)
+#   greet.long_absence   you've been away from the game for a while (see AbsenceDays)
+#   greet.hurt           you're below 35% health
+#   greet.<role>.<familiarity>   role is vendor, guard, banker or townsfolk
+#   flavor.time.<time>   sometimes tacked on after the greeting
+#   flavor.class.<Class> same, by your class name (e.g. flavor.class.Paladin)
+#   hostile              replaces the "..." from NPCs who dislike you
+#   busy                 replaces "I'm busy right now..."
+#
+# AMBIENT lines are spoken on their own by friendly NPCs near you.
+#   ambient                      anyone, anywhere
+#   ambient.<role>               ambient.vendor, ambient.guard, ambient.banker, ambient.townsfolk
+#   ambient.time.<time>          by time of day
+#   ambient.zone.<Zone>          by scene; the BepInEx log prints the name each time you zone
+#   ambient.to_player            said to you when you stand close
+#   ambient.player_hurt          said to you when you stand close and are badly hurt
+#
+# ONE NPC: give a single character their own voice. Use their exact name.
+#   [npc.Some Name.greet]   [npc.Some Name.greet.first]   [npc.Some Name.ambient]
+#   [npc.Some Name.hurt]    [npc.Some Name.hostile]       [npc.Some Name.busy]
+
+# ------------------------------------------------------------------ greetings
+
+[greet.first]
+Hm. A new face.
+Haven't seen you before, {class}.
+Well met, stranger.
+You've the look of someone just off the road.
+Another adventurer. Welcome, I suppose.
+Mind the mud on your boots. Now, what is it?
+Ah. You must be the one folk have been whispering about. Or another one like them.
+A {class}? We don't get many of your sort through here.
+
+[greet.returning]
+Back again, {player}?
+{player}. Good to see you still breathing.
+Oh, it's you. Come in, come in.
+You again. I was just thinking about you.
+{player}! I'd wondered if you'd come by.
+Still in one piece, I see.
+
+[greet.regular]
+{player}, my friend.
+There's my favourite {class}.
+I could set my clock by you, {player}.
+Ha! I knew that step. Hello, {player}.
+You're practically furniture here now, {player}.
+For you, {player}, I always have a moment.
+
+[greet.long_absence]
+{player}?! By the light, I thought you'd gone and died on us.
+Well, look who finally remembered we exist.
+It's been an age, {player}. Where have you been?
+{player}! Folk were starting to tell stories about where you'd vanished to.
+You've been gone so long I'd started giving your stories to someone else.
+
+[greet.hurt]
+Gods, {player}, you're bleeding all over my floor.
+You look half-dead. Sit before you fall.
+Who did that to you? No, don't tell me. Just get yourself healed.
+You should see a healer before you see me.
+Stay back, you'll get blood on everything.
+
+[greet.vendor.first]
+Ah, a customer! Look all you like, but you break it, you've bought it.
+Fresh stock, fair prices. Mostly fair.
+Coin's coin, stranger. What do you need?
+
+[greet.vendor.returning]
+Back for more, {player}? I've had a few things come in.
+{player}! Your coin's always welcome here.
+
+[greet.vendor.regular]
+{player}! I set something aside for you. Well, I would have, if I'd remembered.
+My best customer. Don't tell the others I said so.
+
+[greet.guard.first]
+Keep your weapon sheathed in town, {class}.
+State your business. Quickly.
+I've got my eye on you, stranger.
+
+[greet.guard.returning]
+{player}. Behave yourself and we'll get on fine.
+Back again. Staying out of trouble?
+
+[greet.guard.regular]
+{player}. Quiet watch so far. Let's keep it that way.
+If you see anything strange out there, {player}, you tell me first.
+
+[greet.banker.first]
+Your valuables are safe with us. Safer than with you, I'd wager.
+An account? Certainly. Sign here, and here, and here.
+
+[greet.banker.returning]
+{player}. Your vault is just as you left it.
+
+[greet.banker.regular]
+{player}, a pleasure as always. Your holdings are in perfect order.
+
+[flavor.time.morning]
+Early start, is it?
+The day's barely begun.
+You're up with the birds.
+
+[flavor.time.afternoon]
+Hot one today.
+Half the day's gone already.
+
+[flavor.time.evening]
+Sun's going down. Don't stay out too late.
+Lamps'll be lit soon.
+
+[flavor.time.night]
+Bit late to be wandering about, isn't it?
+Can't sleep either?
+Strange things walk at this hour.
+
+[flavor.class.Paladin]
+I can tell by your bearing you're one of the holy sort.
+Mind you don't lecture me about my sins.
+
+[flavor.class.Duelist]
+Keep those blades sheathed in here, please.
+You move like you're always expecting a fight.
+
+[flavor.class.Arcanist]
+Your fingers are scorched. Spellwork, I'd guess.
+Please don't set anything on fire.
+
+[flavor.class.Druid]
+You smell like a forest after rain.
+The wilds follow you about, don't they?
+
+[flavor.class.Stormcaller]
+The air crackles around you. Don't touch anything metal.
+
+[flavor.class.Reaver]
+There's something unsettling about you. No offence.
+
+[hostile]
+I've nothing to say to you.
+Get out of my sight.
+Your kind isn't welcome here.
+Walk away while you still can.
+...
+Talk to me again and you'll regret it.
+
+[busy]
+Not now! Can't you see I'm fighting for my life?
+Later! I'm a bit occupied!
+Help me or get out of the way!
+
+# ------------------------------------------------------------------ ambient
+
+[ambient]
+*hums an old tune under their breath*
+*stretches and rolls their shoulders*
+Hm. Where did I put that?
+Rumour says something big is stirring in the deep places.
+They say the old ruins are full of treasure. They say a lot of things.
+*glances at the sky*
+Another day, another copper.
+*mutters something about the price of bread*
+My knees aren't what they used to be.
+Did you hear? Someone came back from the wilds with a sword that glowed.
+I keep having the same dream. Water, and a door that won't open.
+*yawns*
+Adventurers. Always rushing about.
+
+[ambient.time.morning]
+Nothing like the morning air.
+*sips from a steaming cup*
+Up and at it.
+
+[ambient.time.afternoon]
+*wipes sweat from their brow*
+The day drags on.
+
+[ambient.time.evening]
+Almost time to close up.
+Evening already? Where does the day go?
+*watches the sunset for a moment*
+
+[ambient.time.night]
+*shivers* Cold tonight.
+Did you hear that? ...Must be the wind.
+Should be in bed by now.
+I don't like the dark out here.
+
+[ambient.vendor]
+Fine goods! Fair prices! Come and see!
+Everything must go! Well, not everything. But some things.
+Bandages, rations, rope! Don't go into the wilds without rope!
+I've got just the thing for you, whoever you are.
+*rearranges the wares for the third time*
+Business has been slow. Don't suppose you're buying?
+
+[ambient.guard]
+*scans the horizon*
+All quiet. Too quiet, maybe.
+Another long shift.
+*shifts weight from one foot to the other*
+If those brigands come back, they'll find us ready.
+Keep moving, nothing to see here.
+I could do with a hot meal and a soft bed.
+
+[ambient.guard.night]
+Night watch is the worst watch.
+*peers into the darkness*
+Stay sharp. Things move at night.
+
+[ambient.banker]
+*counts coins under their breath*
+Every copper accounted for. Every single one.
+Interest rates? Don't get me started.
+
+[ambient.to_player]
+Watch yourself out there, {player}.
+Nice gear, {class}. Seen some fights, I'd guess.
+You've got the look of someone with a story, {player}.
+If you're heading out, take something warm. Nights get cold.
+Psst, {class}. Heard there's good coin in clearing out the vermin nearby.
+
+[ambient.player_hurt]
+You're hurt, {player}. Rest a while.
+That looks bad. You should find a healer.
+Sit down before you fall down, {class}.
+
+# Zones. The names here are scene names: check the BepInEx log if a zone stays silent.
+
+[ambient.zone.Stowaway]
+*listens to the creak of the hull*
+The sea's restless today.
+Smells of salt and tar. Home.
+Land ho can't come soon enough.
+
+[ambient.zone.Azure]
+The harbour's busy today.
+Ships in from all over. Never know who'll step off next.
+*breathes in the sea air*
+The fish market reeks something awful this time of day.
+
+[ambient.zone.Hidden]
+Peaceful place, this. Mostly.
+The hills keep secrets. Old ones.
+*watches the grass ripple in the wind*
+
+[ambient.zone.Brake]
+The fae get up to mischief out here. Don't follow the lights.
+Something giggled in the bushes. I'm not going to check.
+
+[ambient.zone.Loomingwood]
+The trees here are older than anything.
+You get lost in Loomingwood if you're not careful. Some never come out.
+
+[ambient.zone.Rottenfoot]
+Ugh. This bog.
+Don't drink the water. Trust me.
+*swats at a cloud of insects*
+
+[ambient.zone.Willowwatch]
+The willows whisper, if you listen.
+Quiet out here. Good for thinking.
+
+# ------------------------------------------------------------------ single NPCs
+# Examples. Copy the pattern for any named NPC in the game.
+
+[npc.Prestigio Valusha.greet]
+Ah, {player}. Your vault awaits, as faithful as ever.

@@ -1,0 +1,8 @@
+bin/
+obj/
+*.user
+.vs/
+# Game files are copyrighted; never commit them.
+lib/
+*.dll
+!LivingNPCs/**/*.cs
