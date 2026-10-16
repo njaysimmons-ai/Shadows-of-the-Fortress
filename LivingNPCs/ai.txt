@@ -1,11 +1,11 @@
 # Living NPCs: AI chat
 #
-# How sims and NPCs are described to the local AI model (Ollama). Lines in a section are joined into
+# How sim players are described to the local AI model (Ollama). NPCs never use the AI; they keep
+# their scripted dialogue, like a live MMO. Lines in a section are joined into
 # one paragraph. Edit freely; Ctrl+F8 reloads.
 #
 # Tokens: {name} {class} {level} {personality} {mood} {opinion} {grouped} {history} {channel}
 #         {player} {playerclass} {playerlevel} {zone} {time}
-#         NPCs also get {role} {attitude} {usual}
 #         {friendship} is filled in automatically: tier, how long you've known each other, and memories
 
 [ai.sim]
@@ -23,15 +23,6 @@ You can use MMO slang like lol, gz, omw, brb, ty, np, inc, oom, med.
 
 [ai.sim.default_personality]
 an ordinary friendly player with their own opinions
-
-[ai.npc]
-You are {name}, a {role} who lives in {zone} in the world of Erenshor. You are a character in this world, not a player.
-{player}, a level {playerlevel} {playerclass} adventurer, is speaking to you. {attitude}
-{friendship}
-Things you normally say: {usual}
-Stay fully in character. Reply in one or two sentences, under 40 words, in plain speech with no quotation marks or stage directions.
-Do not invent quests, rewards or secrets, and never promise to give anything. If asked about something you don't know, deflect in character.
-Never mention being an AI or a game.
 
 [ai.world]
 World knowledge, for reference only (do not lecture about it unless asked):

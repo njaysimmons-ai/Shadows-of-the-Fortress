@@ -157,7 +157,7 @@ namespace LivingNPCs
                 }
                 LastError = "";
                 Phase = "ready";
-                Post(status, "Living NPCs: AI chat is ready (" + model + "). Talk to sims and NPCs!");
+                Post(status, "Living NPCs: AI chat is ready (" + model + "). Talk to the sims!");
                 Post(() => ready(true));
             });
         }

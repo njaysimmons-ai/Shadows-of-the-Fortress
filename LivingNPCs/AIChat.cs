@@ -8,7 +8,7 @@ using UnityEngine;
 namespace LivingNPCs
 {
     /// <summary>
-    /// Lets you actually talk to sims and NPCs. What you type goes to a local AI model along with who
+    /// Lets you actually talk to sim players. (NPCs stay scripted, as in a live MMO.) What you type goes to a local AI model along with who
     /// the character is: their persona, mood, history with you, the zone, and Erenshor's lore. The
     /// reply comes back through the game's own chat, typing quirks and all. The game's normal handling
     /// of what you type still happens; the AI only adds conversation.
@@ -57,7 +57,7 @@ namespace LivingNPCs
             {
                 announced = true;
                 UpdateSocialLog.LogAdd(Ready
-                    ? "Living NPCs: AI chat is on (" + Plugin.AiModel.Value + "). Target a sim or NPC, or stand next to one, and type to talk."
+                    ? "Living NPCs: AI chat is on (" + Plugin.AiModel.Value + "). Target a sim, or stand next to one, and type to talk."
                     : "Living NPCs: AI chat isn't ready yet: " + (string.IsNullOrEmpty(Ollama.LastError) ? Ollama.Phase : Ollama.LastError) + ". Type /ai for progress.", Ready ? "#7FD1AE" : "yellow");
             }
 
@@ -148,7 +148,7 @@ namespace LivingNPCs
                 if (group.Count == 0) return;
                 SimPlayer named = group.Find(s => Mentions(message, s.name));
                 SimPlayer speaker = named ?? group[Plugin.Rng.Next(group.Count)];
-                Ask(speaker.name, speaker, null, Channel.Party, message);
+                Ask(speaker.name, speaker, Channel.Party, message);
                 return;
             }
 
@@ -158,7 +158,7 @@ namespace LivingNPCs
                 if (parts.Length < 3 || GameCommandWords.IsMatch(parts[2])) return;
                 SimPlayerTracking tracking = GameData.SimMngr.Sims.Find(s => string.Equals(s.SimName, parts[1], StringComparison.OrdinalIgnoreCase));
                 if (tracking == null) return;
-                Ask(tracking.SimName, tracking.MyAvatar, null, Channel.Whisper, parts[2]);
+                Ask(tracking.SimName, tracking.MyAvatar, Channel.Whisper, parts[2]);
                 return;
             }
 
@@ -173,23 +173,17 @@ namespace LivingNPCs
                 SimPlayer sim = target.GetComponent<SimPlayer>();
                 if (sim != null && SimLife.Alive(sim))
                 {
-                    Ask(sim.name, sim, null, Channel.Say, text);
+                    Ask(sim.name, sim, Channel.Say, text);
                     return;
                 }
-                NPC npc = target.GetComponent<NPC>();
-                NPCDialogManager manager = target.GetComponent<NPCDialogManager>();
-                if (npc != null && manager != null && npc.CheckLiving() && !MatchesKeyword(manager, text) &&
-                    Vector3.Distance(target.transform.position, SimLife.PlayerPos) <= 8f)
-                {
-                    Ask(npc.NPCName, null, npc, Channel.Say, text);
-                    return;
-                }
+                // Talking to an NPC is the game's business: they answer with their scripted dialogue, never AI.
+                if (target.GetComponent<NPCDialogManager>() != null) return;
             }
             foreach (SimPlayer sim in SimLife.NearbySims(20f, includeGroup: true))
             {
                 if (Mentions(text, sim.name))
                 {
-                    Ask(sim.name, sim, null, Channel.Say, text);
+                    Ask(sim.name, sim, Channel.Say, text);
                     return;
                 }
             }
@@ -210,7 +204,7 @@ namespace LivingNPCs
                 }
                 if (closest != null)
                 {
-                    Ask(closest.name, closest, null, Channel.Say, text);
+                    Ask(closest.name, closest, Channel.Say, text);
                     return;
                 }
             }
@@ -221,7 +215,7 @@ namespace LivingNPCs
                 if (near.Count > 0)
                 {
                     SimPlayer sim = near[Plugin.Rng.Next(near.Count)];
-                    Ask(sim.name, sim, null, Channel.Say, text);
+                    Ask(sim.name, sim, Channel.Say, text);
                 }
             }
         }
@@ -229,37 +223,21 @@ namespace LivingNPCs
         private static bool Mentions(string text, string name) =>
             !string.IsNullOrEmpty(name) && Regex.IsMatch(text, @"\b" + Regex.Escape(name) + @"\b", RegexOptions.IgnoreCase);
 
-        /// <summary>Quest keywords belong to the game: if you said one, the NPC answers with its real dialogue.</summary>
-        private static bool MatchesKeyword(NPCDialogManager manager, string text)
-        {
-            string lower = text.ToLowerInvariant();
-            NPCDialog[] options = manager.MyDialogOptions ?? manager.GetComponents<NPCDialog>();
-            foreach (NPCDialog option in options)
-            {
-                if (option?.KeywordToActivate == null) continue;
-                foreach (string keyword in option.KeywordToActivate)
-                {
-                    if (!string.IsNullOrEmpty(keyword) && lower.Contains(keyword.ToLowerInvariant())) return true;
-                }
-            }
-            return false;
-        }
-
         // ================================================================ asking the model
 
-        private static void Ask(string who, SimPlayer sim, NPC npc, Channel channel, string playerText)
+        private static void Ask(string who, SimPlayer sim, Channel channel, string playerText)
         {
             if (Waiting.Count >= 3) Waiting.Dequeue();
-            Waiting.Enqueue(() => Send(who, sim, npc, channel, playerText));
+            Waiting.Enqueue(() => Send(who, sim, channel, playerText));
         }
 
-        private static void Send(string who, SimPlayer sim, NPC npc, Channel channel, string playerText)
+        private static void Send(string who, SimPlayer sim, Channel channel, string playerText)
         {
             Plugin.Bonds.UseCharacter(WorldContext.PlayerName);
-            string key = npc != null ? Friendships.Npc(who) : Friendships.Sim(who);
+            string key = Friendships.Sim(who);
             bool remember = FriendshipEvents.On;
             string friendship = remember ? FriendshipText(key, who) : "";
-            string system = (npc != null ? NpcPrompt(npc) : SimPrompt(who, sim, channel)).Replace("{friendship}", friendship);
+            string system = SimPrompt(who, sim, channel).Replace("{friendship}", friendship);
             List<Ollama.Message> history;
             if (remember)
             {
@@ -277,14 +255,14 @@ namespace LivingNPCs
             messages.Add(new Ollama.Message("user", heard));
 
             float asked = Time.time;
-            Ollama.Chat(messages, npc != null ? 110 : 70, reply =>
+            Ollama.Chat(messages, 70, reply =>
             {
                 if (reply == null && Time.time - lastFailureNotice > 60f)
                 {
                     lastFailureNotice = Time.time;
                     TryChat("Living NPCs: " + who + " couldn't answer: " + Ollama.LastError + ". Type /ai test to check.", "yellow");
                 }
-                reply = Clean(reply, who, npc == null && SimLife.PersonaOf(sim) != "roleplayer");
+                reply = Clean(reply, who, SimLife.PersonaOf(sim) != "roleplayer");
                 if (string.IsNullOrEmpty(reply)) return;
                 if (remember)
                 {
@@ -304,19 +282,12 @@ namespace LivingNPCs
 
                 // A short pause to "type", so replies don't arrive impossibly fast.
                 float typing = Mathf.Clamp(reply.Length * 0.035f - (Time.time - asked), 0.3f, 3f);
-                Scheduler.After(typing, () => Deliver(who, sim, npc, channel, reply));
+                Scheduler.After(typing, () => Deliver(who, sim, channel, reply));
             });
         }
 
-        private static void Deliver(string who, SimPlayer sim, NPC npc, Channel channel, string reply)
+        private static void Deliver(string who, SimPlayer sim, Channel channel, string reply)
         {
-            if (npc != null)
-            {
-                if (npc == null || !npc.CheckLiving()) return;
-                Speech.Face(npc, SimLife.PlayerPos);
-                Speech.NpcSay(npc, reply);
-                return;
-            }
             switch (channel)
             {
                 case Channel.Party:
@@ -458,23 +429,6 @@ namespace LivingNPCs
             return Fill(Section("ai.sim"), tokens) + " " + Fill(Section("ai.world"), tokens);
         }
 
-        private static string NpcPrompt(NPC npc)
-        {
-            var tokens = BaseTokens();
-            tokens["name"] = npc.NPCName;
-            tokens["role"] = WorldContext.RoleOf(npc).ToString().ToLowerInvariant();
-            tokens["attitude"] = WorldContext.IsHostileToPlayer(npc) ? "You dislike and distrust them." : "You are civil toward them.";
-            var said = new StringBuilder();
-            foreach (NPCDialog d in npc.GetComponents<NPCDialog>())
-            {
-                if (d != null && !string.IsNullOrEmpty(d.Dialog)) said.Append(d.Dialog.Replace('\n', ' ')).Append(' ');
-            }
-            string usual = said.ToString().Trim();
-            if (usual.Length > 600) usual = usual.Substring(0, 600);
-            tokens["usual"] = usual.Length > 0 ? usual : "(nothing in particular)";
-            return Fill(Section("ai.npc"), tokens) + " " + Fill(Section("ai.world"), tokens);
-        }
-
         private static Dictionary<string, string> BaseTokens()
         {
             Stats p = GameData.PlayerStats;
@@ -568,7 +522,7 @@ namespace LivingNPCs
                 UpdateSocialLog.LogAdd("Living NPCs AI chat: " + state + ". Model: " + Plugin.AiModel.Value + ", Ollama at " + Plugin.AiUrl.Value + ".", "yellow");
                 if (Plugin.AiEnabled.Value && !AIChat.Ready) UpdateSocialLog.LogAdd("Right now: " + Ollama.Phase, "yellow");
                 if (!string.IsNullOrEmpty(Ollama.LastError)) UpdateSocialLog.LogAdd("Last problem: " + Ollama.LastError, "yellow");
-                UpdateSocialLog.LogAdd("To talk: target a sim or NPC (or stand next to a sim) and type; /p for your group; /w Name to whisper.", "yellow");
+                UpdateSocialLog.LogAdd("To talk: target a sim (or stand next to one) and type; /p for your group; /w Name to whisper. NPCs keep their scripted dialogue.", "yellow");
                 UpdateSocialLog.LogAdd("Commands: /ai test, /ai on, /ai off, /ai model NAME", "yellow");
             }
             return false;

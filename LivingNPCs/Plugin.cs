@@ -13,7 +13,7 @@ namespace LivingNPCs
     public class Plugin : BaseUnityPlugin
     {
         public const string Guid = "njaysimmons.erenshor.livingnpcs";
-        public const string Version = "0.4.2";
+        public const string Version = "0.4.3";
 
         internal static ManualLogSource Log;
         internal static DialogueBank Bank;
@@ -110,7 +110,7 @@ namespace LivingNPCs
             PostFightChance = Config.Bind("Living World", "PostFightChance", 0.3f, "Chance (0-1) someone comments after a fight.");
             MemoryChance = Config.Bind("Living World", "MemoryGreetingChance", 0.4f, "Chance (0-1) a sim's greeting mentions something you went through together.");
 
-            AiEnabled = Config.Bind("AI Chat", "Enabled", true, "Talk to sims and NPCs in your own words, answered by a local AI (Ollama). Toggle in game with /ai on or /ai off.");
+            AiEnabled = Config.Bind("AI Chat", "Enabled", true, "Talk to sim players in your own words, answered by a local AI (Ollama). NPCs stay scripted. Toggle in game with /ai on or /ai off.");
             AiModel = Config.Bind("AI Chat", "Model", "llama3.2:3b", "Ollama model to use. llama3.2:3b (2 GB) suits most PCs; try llama3.1:8b or qwen2.5:7b on a strong GPU.");
             AiUrl = Config.Bind("AI Chat", "OllamaUrl", "http://127.0.0.1:11434", "Where Ollama is listening.");
             AiAutoStart = Config.Bind("AI Chat", "StartOllamaAutomatically", true, "Launch Ollama in the background when the game starts, if it's installed and not already running.");

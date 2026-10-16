@@ -101,7 +101,7 @@ if ($upgrading -and $existing.Count -gt 0) {
 # ================================================================ AI chat
 
 Step "AI chat (optional)"
-Say "With AI chat you can talk to sims and NPCs in your own words. It runs on your own PC through"
+Say "With AI chat you can talk to the sim players in your own words. It runs on your own PC through"
 Say "a free program called Ollama: private, and no internet needed once it's set up."
 $vram = Get-VideoMemoryGB
 $model = Choose-Model $vram
@@ -170,7 +170,7 @@ if (Ask "Set up AI chat?") {
 Step "All set!"
 Say "In game:" "White"
 Say "  /emotes      list emotes (/wave, /bow, /cheer, /dance, ...)"
-Say "  /ai          AI chat status; target a sim or NPC and just type to talk"
+Say "  /ai          AI chat status; target a sim (or stand next to one) and just type to talk"
 Say "  Ctrl+F8      reload the dialogue files after editing them"
 Say "Settings and dialogue files: $ConfigDir"
 Say ""

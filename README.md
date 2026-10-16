@@ -18,15 +18,17 @@ Every sim and NPC builds a long-term friendship with each of your characters, sa
   together in Rottenfoot?"), wave you over when they see you, whisper hello when you log in
   ("you're back! where've you been??"), and hug back properly. NPC friends greet you by name.
   Sims' in-game opinion of you rises too, so friends are keener to group and invite you to guilds.
-- **AI chat remembers.** Conversations are saved, and the AI knows your friendship level, how long
+- **AI chat remembers** (sims). Conversations are saved, and the AI knows your friendship level, how long
   you've known each other and their memories of you, so a best friend talks like one.
 - `/friends` lists your closest bonds; `/memories Name` (or target someone and type `/memories`)
   shows what they remember.
 
 ## Talk to anyone (AI chat)
 
-With [Ollama](https://ollama.com) installed, you can talk to sims and NPCs in your own words and
+With [Ollama](https://ollama.com) installed, you can talk to the sim players in your own words and
 they answer in character, generated on your own PC (free, private, no internet needed once set up).
+Only sims use the AI: NPCs keep their scripted dialogue, so the world feels like a live MMO where the
+players are the unpredictable part.
 
 **One-time setup:** install Ollama from ollama.com. That's it. When the game starts, the mod
 launches Ollama in the background if it isn't running, downloads the model the first time
@@ -40,8 +42,6 @@ It closes Ollama again when you quit.
 - **Ask a question out loud** and someone nearby might answer.
 - **/p message** to your group: a groupmate answers (or the one you named).
 - **/w Name message**: whisper any sim, even one in another zone.
-- **Target an NPC and type**: they answer in character, based on their real in-game dialogue.
-  Quest keywords still go to the game, so quests work exactly as before.
 
 Messages about grouping, invites and trading are left to the game's own sims, so the game's group,
 invite and trade handling isn't affected.
@@ -163,7 +163,7 @@ BepInEx if the installer was the one that added it.
 
 The mod writes its files to `Erenshor/BepInEx/config/`:
    - `njaysimmons.erenshor.livingnpcs.cfg`: settings (chatter frequency, radius, toggles)
-   - `LivingNPCs/ai.txt`: how sims and NPCs are described to the AI, and the lore it knows
+   - `LivingNPCs/ai.txt`: how sims are described to the AI, and the lore it knows
    - `LivingNPCs/life.txt`: actions, reactions, banter, memories and emotes
    - `LivingNPCs/sims.txt`: sim player personas
    - `LivingNPCs/dialogue.txt`: every line NPCs can say
@@ -216,6 +216,6 @@ Game assemblies are referenced from your install and are never committed to this
 - `PlayerEmotes.cs` patches `TypeText.CheckCommands` to add emote commands, and
   `SimPlayerLanguage.GetTargetedHello` so greetings can bring up shared memories.
 - `Ollama.cs` talks to the local Ollama server on a background thread (and can start it and pull
-  the model); `AIChat.cs` patches `TypeText.CheckInput` to see what you type, decides who should
-  answer, builds their prompt and prints the reply through the game's chat.
+  the model); `AIChat.cs` patches `TypeText.CheckInput` to see what you type, decides which sim should
+  answer (never an NPC), builds their prompt and prints the reply through the game's chat.
 - `NpcMemory.cs` keeps the per-character meeting counts and last-seen times.
