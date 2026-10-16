@@ -521,6 +521,9 @@ namespace LivingNPCs
                 string state = !Plugin.AiEnabled.Value ? "OFF" : AIChat.Ready ? "ON and connected" : "ON but NOT connected";
                 UpdateSocialLog.LogAdd("Living NPCs AI chat: " + state + ". Model: " + Plugin.AiModel.Value + ", Ollama at " + Plugin.AiUrl.Value + ".", "yellow");
                 if (Plugin.AiEnabled.Value && !AIChat.Ready) UpdateSocialLog.LogAdd("Right now: " + Ollama.Phase, "yellow");
+                bool looping = Host.LastBeat >= 0f && Time.realtimeSinceStartup - Host.LastBeat < 2f;
+                UpdateSocialLog.LogAdd("Mod update loop: " + (looping ? "running" : "NOT running (please report this)") +
+                                       (Host.Starts > 1 ? ", restarted " + (Host.Starts - 1) + " times" : ""), looping ? "yellow" : "red");
                 if (!string.IsNullOrEmpty(Ollama.LastError)) UpdateSocialLog.LogAdd("Last problem: " + Ollama.LastError, "yellow");
                 UpdateSocialLog.LogAdd("To talk: target a sim (or stand next to one) and type; /p for your group; /w Name to whisper. NPCs keep their scripted dialogue.", "yellow");
                 UpdateSocialLog.LogAdd("Commands: /ai test, /ai on, /ai off, /ai model NAME", "yellow");

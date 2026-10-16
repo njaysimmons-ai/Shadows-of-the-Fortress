@@ -13,7 +13,7 @@ namespace LivingNPCs
     public class Plugin : BaseUnityPlugin
     {
         public const string Guid = "njaysimmons.erenshor.livingnpcs";
-        public const string Version = "0.4.3";
+        public const string Version = "0.4.4";
 
         internal static ManualLogSource Log;
         internal static DialogueBank Bank;
@@ -144,37 +144,33 @@ namespace LivingNPCs
             Friends.TierReached += FriendshipEvents.OnTierReached;
             LoadDialogue();
 
+            Instance = this;
             new Harmony(Guid).PatchAll(typeof(Plugin).Assembly);
-            gameObject.AddComponent<Scheduler>();
-            gameObject.AddComponent<AmbientChatter>();
-            gameObject.AddComponent<SimLife>();
-            gameObject.AddComponent<AIChat>();
+            Host.Ensure();
             Log.LogInfo("Living NPCs " + Version + " loaded.");
         }
 
-        private void Update()
+        internal static Plugin Instance;
+
+        internal void ReloadFromKey()
         {
-            if (ReloadKey.Value.IsDown())
+            LoadDialogue();
+            UpdateSocialLog.LogAdd("Living NPCs: reloaded " + Bank.LineCount + " NPC lines and " + SimVoices.PersonaCount +
+                                   " sim personas. Personas apply to sims as they next spawn.", "yellow");
+        }
+
+        internal static void SaveAll()
+        {
+            try
             {
-                LoadDialogue();
-                UpdateSocialLog.LogAdd("Living NPCs: reloaded " + Bank.LineCount + " NPC lines and " + SimVoices.PersonaCount +
-                                       " sim personas. Personas apply to sims as they next spawn.", "yellow");
+                Memory.Save();
+                Bonds.Save();
+                Friends.Save();
             }
-        }
-
-        private void OnApplicationQuit()
-        {
-            Memory.Save();
-            Bonds.Save();
-            Friends.Save();
-            Friends.Save();
-        }
-
-        private void OnApplicationPause(bool paused)
-        {
-            if (!paused) return;
-            Memory.Save();
-            Bonds.Save();
+            catch (Exception e)
+            {
+                Log.LogError("Saving Living NPCs data failed: " + e);
+            }
         }
 
         private void LoadDialogue()
