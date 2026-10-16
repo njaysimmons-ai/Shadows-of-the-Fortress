@@ -14,7 +14,7 @@ namespace LivingNPCs
     /// </summary>
     public static class SimActions
     {
-        private static readonly Regex Tag = new Regex(@"\[\s*(JOIN|LEAVE|COME|MEET|WAVE|DANCE|SIT|CHEER|BOW|LAUGH)\s*(?::\s*([^\]]*))?\]", RegexOptions.IgnoreCase);
+        private static readonly Regex Tag = new Regex(@"\[\s*(JOIN|LEAVE|COME|MEET|GUIDE|FOLLOW|WAIT|STAY|BUFF|HELP|WAVE|DANCE|SIT|CHEER|BOW|LAUGH)\s*(?::\s*([^\]]*))?\]", RegexOptions.IgnoreCase);
         private static readonly Regex AnyTag = new Regex(@"\[[^\]]*\]");
 
         private class Meeting
@@ -27,6 +27,9 @@ namespace LivingNPCs
 
         private static readonly List<Meeting> Meetings = new List<Meeting>();
         private static readonly Dictionary<string, float> PendingJoins = new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase);
+
+        // Sims who joined just to help with a fight, and when they'll give up waiting for one.
+        private static readonly Dictionary<string, float> Helpers = new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase);
         private static float nextTick;
 
         // ---------------------------------------------------------------- parsing
@@ -92,19 +95,41 @@ namespace LivingNPCs
             Plugin.Log.LogInfo("Sim action: " + simName + " " + action + (argument != null ? " " + argument : ""));
             try
             {
+                bool here = sim != null && tracking.CurScene == WorldContext.Zone && SimLife.Alive(sim);
                 switch (action)
                 {
                     case "JOIN":
                     case "COME":
-                        if (sim != null && tracking.CurScene == WorldContext.Zone && SimLife.Alive(sim)) Join(sim);
+                        if (here) { SimEscort.Stop(sim); Join(sim); }
                         else ComeToPlayer(tracking);
                         break;
+                    case "HELP":
+                        if (here) { SimEscort.Stop(sim); Join(sim); }
+                        else ComeToPlayer(tracking);
+                        Helpers[tracking.SimName] = Time.time + 15f * 60f;
+                        break;
                     case "LEAVE":
-                        if (sim != null && sim.InGroup)
+                        if (sim != null) SimEscort.Stop(sim);
+                        Leave(sim);
+                        break;
+                    case "GUIDE":
+                        if (!here) break;
+                        if (!SimEscort.Guide(sim, argument))
                         {
-                            Character c = sim.GetComponent<Character>();
-                            if (c != null) GameData.SimPlayerGrouping.ForceDismissFromGroup(c);
+                            string lost = Lines.Pick("action.guide.unknown", SimLife.PersonaOf(sim)) ?? "hm, actually i'm not sure where that is";
+                            Scheduler.After(1.5f, () => Speech.Say(sim, lost));
                         }
+                        break;
+                    case "FOLLOW":
+                        if (here) SimEscort.Follow(sim);
+                        else ComeToPlayer(tracking);
+                        break;
+                    case "WAIT":
+                    case "STAY":
+                        if (here) SimEscort.Wait(sim);
+                        break;
+                    case "BUFF":
+                        if (here) Buff(sim);
                         break;
                     case "MEET":
                         Meet(tracking, sim, argument);
@@ -135,6 +160,97 @@ namespace LivingNPCs
                 bool full = Array.TrueForAll(GameData.GroupMembers, m => m != null);
                 string why = full ? "oh wait, your group's full" : "hm, can't join, we're too far apart in level i think";
                 Scheduler.After(1.5f, () => Speech.Say(sim, why));
+            }
+        }
+
+        private static void Leave(SimPlayer sim)
+        {
+            if (sim == null || !sim.InGroup) return;
+            Character c = sim.GetComponent<Character>();
+            if (c != null) GameData.SimPlayerGrouping.ForceDismissFromGroup(c);
+        }
+
+        /// <summary>The buffs this sim can cast on someone else, by name, for the AI prompt.</summary>
+        public static List<Spell> BuffsFor(SimPlayer sim)
+        {
+            var list = new List<Spell>();
+            NPC npc = sim != null ? sim.GetComponent<NPC>() : null;
+            if (npc?.MyBuffSpells == null) return list;
+            foreach (Spell s in npc.MyBuffSpells)
+            {
+                if (s != null && !s.SelfOnly && s.Type == Spell.SpellType.Beneficial && !s.GrantInvisibility && !list.Contains(s)) list.Add(s);
+            }
+            return list;
+        }
+
+        /// <summary>Walks into range if needed, then casts up to two of its buffs on you.</summary>
+        private static void Buff(SimPlayer sim)
+        {
+            List<Spell> buffs = BuffsFor(sim);
+            string persona = SimLife.PersonaOf(sim);
+            if (buffs.Count == 0)
+            {
+                string none = Lines.Pick("action.buff.none", persona) ?? "oh, i don't actually have any buffs i can give, sorry";
+                Scheduler.After(1.5f, () => Speech.Say(sim, none));
+                return;
+            }
+            CastSpell caster = sim.GetComponent<CastSpell>();
+            if (caster == null) return;
+            bool walked = false;
+            int cast = 0;
+            float giveUp = Time.time + 30f;
+
+            void Try()
+            {
+                if (sim == null || !SimLife.Alive(sim) || cast >= Math.Min(2, buffs.Count) || Time.time > giveUp)
+                {
+                    if (walked && sim != null) SimEscort.Stop(sim);
+                    return;
+                }
+                if (caster.isCasting()) { Scheduler.After(0.5f, Try); return; }
+                Spell spell = buffs[cast];
+                float range = Math.Max(3f, spell.SpellRange - 1f);
+                if (Vector3.Distance(sim.transform.position, SimLife.PlayerPos) > range)
+                {
+                    if (!walked) { walked = true; SimEscort.Follow(sim); }
+                    Scheduler.After(0.5f, Try);
+                    return;
+                }
+                Speech.Face(sim, SimLife.PlayerPos);
+                if (caster.StartSpell(spell, GameData.PlayerStats))
+                {
+                    cast++;
+                    Scheduler.After(1f, Try);
+                }
+                else
+                {
+                    if (walked) SimEscort.Stop(sim);
+                    if (cast == 0)
+                    {
+                        string oom = Lines.Pick("action.buff.oom", persona) ?? "oom, gimme a sec";
+                        Speech.Say(sim, oom);
+                    }
+                }
+            }
+            Scheduler.After(1f, Try);
+        }
+
+        /// <summary>Called by SimLife when a fight ends: helpers who came for one fight head off.</summary>
+        public static void OnFightWon(List<SimPlayer> group)
+        {
+            foreach (SimPlayer sim in group)
+            {
+                if (sim == null || !Helpers.ContainsKey(sim.name)) continue;
+                Helpers.Remove(sim.name);
+                string bye = Lines.Fill(Lines.Pick("action.help.done", SimLife.PersonaOf(sim)) ?? "glad i could help, {player}! catch you later",
+                    new Dictionary<string, string> { ["player"] = WorldContext.PlayerName });
+                SimPlayer s = sim;
+                Scheduler.After(UnityEngine.Random.Range(5f, 9f), () =>
+                {
+                    if (s == null || GameData.InCombat) return;
+                    Speech.Party(s, bye);
+                    Scheduler.After(2f, () => Leave(s));
+                });
             }
         }
 
@@ -242,6 +358,17 @@ namespace LivingNPCs
                 }
             }
             foreach (string k in done) PendingJoins.Remove(k);
+
+            // Helpers who never got their fight drift off after a while.
+            var expired = new List<string>();
+            foreach (var pair in Helpers) if (Time.time > pair.Value) expired.Add(pair.Key);
+            foreach (string k in expired)
+            {
+                Helpers.Remove(k);
+                SimPlayerTracking t = FriendshipEvents.Tracking(k);
+                if (t?.MyAvatar != null && t.MyAvatar.InGroup) Leave(t.MyAvatar);
+            }
+            SimEscort.ForgetDestroyed();
         }
 
         public static string Describe()

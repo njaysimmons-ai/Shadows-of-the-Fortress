@@ -341,6 +341,7 @@ namespace LivingNPCs
                 Befriend(group[i], 0.5f, null);
                 for (int j = i + 1; j < group.Count; j++) Bonds.Nudge(group[i].name, group[j].name, 0.01f);
             }
+            SimActions.OnFightWon(group);
             if (Rng.NextDouble() > Plugin.PostFightChance.Value) return;
 
             Stats p = GameData.PlayerStats;

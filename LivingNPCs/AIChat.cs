@@ -434,9 +434,15 @@ namespace LivingNPCs
             tokens["history"] = HistoryText(who);
             tokens["zones"] = SimActions.ZoneList();
             string actions = Section("ai.actions");
-            if (string.IsNullOrEmpty(actions)) actions = DefaultActions;
+            if (string.IsNullOrEmpty(actions) || !actions.Contains("[GUIDE")) actions = DefaultActions;
             tokens["actions"] = Plugin.AiActions.Value ? actions : "";
             tokens["simzone"] = tracking != null ? GetCommonTerms.GetZoneTerm(tracking.CurScene) : WorldContext.Zone;
+            bool sameZone = tracking != null && tracking.CurScene == WorldContext.Zone;
+            tokens["places"] = sameZone ? SimEscort.PlacesHere() : "(you're not in the same zone, so you can't guide right now)";
+            List<Spell> buffs = sameZone ? SimActions.BuffsFor(sim) : new List<Spell>();
+            var buffNames = buffs.ConvertAll(b => b.SpellName);
+            tokens["buffs"] = buffs.Count > 0 ? "Buffs you can cast on others: " + string.Join(", ", buffNames) + "."
+                : "You have no buffs you can cast on others right now, so never offer one.";
             tokens["channel"] = channel == Channel.Party ? "group chat" : channel == Channel.Whisper ? "a private whisper" : "local /say chat";
             string prompt = Section("ai.sim");
             // Older copies of ai.txt don't mention actions; add them so sims can still act.
@@ -444,7 +450,7 @@ namespace LivingNPCs
             return Fill(Fill(prompt, tokens), tokens) + " " + Fill(Section("ai.world"), tokens);
         }
 
-        private const string DefaultActions = "You can act on what you say. If you agree to do something right now, end your message with ONE action tag: [JOIN] to join {player}'s group (only if you're in the same zone), [COME] to travel to where {player} is and join them, [MEET:zone name] to go to a zone and wait at its entrance for {player}, [LEAVE] to leave {player}'s group, or an emote: [WAVE] [DANCE] [SIT] [CHEER] [BOW] [LAUGH]. Only use a tag when you really mean to do it now, and never promise to go somewhere or join without the tag. Zones you can name: {zones}. You are currently in {simzone}.";
+        private const string DefaultActions = "You can act on what you say. If you agree to do something right now, end your message with ONE action tag: [JOIN] to join {player}'s group (same zone only), [HELP] to join just to help with a fight and leave afterwards, [COME] to travel to where {player} is and join them, [MEET:zone name] to go to a zone and wait at its entrance for {player}, [GUIDE:place] to lead {player} to a place or NPC in your current zone, [FOLLOW] to follow {player} around without grouping, [WAIT] to stay where you are, [BUFF] to cast your buffs on {player}, [LEAVE] to leave {player}'s group, or an emote: [WAVE] [DANCE] [SIT] [CHEER] [BOW] [LAUGH]. Only use a tag when you really mean to do it now, and never promise something without the tag. Never offer to trade, sell or give items. Zones you can name: {zones}. You are currently in {simzone}. Places and NPCs in this zone you can guide to: {places}. {buffs}";
 
         private static Dictionary<string, string> BaseTokens()
         {

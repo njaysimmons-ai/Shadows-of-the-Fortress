@@ -1041,3 +1041,40 @@ here. entrance
 
 [action.meet.arrived.hype]
 I'M HERE!! {zone} lets gooo
+
+[action.guide.arrived]
+here you go, {place}!
+this is {place}
+there's {place} for ya
+made it! {place}, right here
+
+[action.guide.arrived.roleplayer]
+Behold, {place}. Safe travels, friend.
+
+[action.guide.arrived.terse]
+{place}. here
+
+[action.guide.unknown]
+hm, actually i'm not sure where that is
+wait, i don't think that's around here
+uh... i might be thinking of somewhere else, sorry
+
+[action.buff.none]
+oh, i don't actually have any buffs i can give, sorry
+ah wait, nothing i can buff you with, my bad
+
+[action.buff.oom]
+oom, gimme a sec
+outta mana, one sec
+need to med first, hold on
+
+[action.help.done]
+glad i could help, {player}! catch you later
+that was fun, gonna head off. good luck {player}!
+ok i'm off, holler if you need me again
+
+[action.help.done.grump]
+there. you owe me one
+
+[action.help.done.roleplayer]
+Our battle is won. Until next time, {player}!

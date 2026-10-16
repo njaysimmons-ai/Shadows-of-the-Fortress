@@ -51,9 +51,15 @@ It closes Ollama again when you quit.
 | "let's head to Rockshade, meet at the entrance" | walk off, travel there, wait at the entrance, whisper you when you arrive, then group up |
 | "omw!" (from another zone) | travel to your zone and join you when they get there |
 | "gotta run, cya" | leave your group |
+| "follow me, i'll show you the bank" | walk you to the banker (or a vendor, an NPC by name, a rest spot, a hunting camp, the exit to a zone), waiting if you fall behind, then point it out |
+| "sure, i'll follow you" / "i'll wait here" | follow you around without grouping, or stay put |
+| "here, have a buff" | walk into range and cast their real buffs on you ("oom, gimme a sec" if they're out of mana) |
+| "i'll help with this one" | join for the fight, then say bye and leave once it's won |
 | waves, dances, sits, cheers | do it, with the animation |
 
-The AI marks what it agreed to with a hidden tag that the mod strips from chat and carries out
+Sims are told which NPCs and spots are in the zone and which buffs they actually have, so they only
+offer what they can do. They never offer trades. If a fight breaks out mid-errand they fight first,
+then carry on. The AI marks what it agreed to with a hidden tag that the mod strips from chat and carries out
 with the game's own mechanics. Turn it off with `SimsActOnWhatTheySay` in the settings.
 
 Messages about grouping, invites and trading are left to the game's own sims, so the game's group,
@@ -228,6 +234,9 @@ Game assemblies are referenced from your install and are never committed to this
   shared history, relationships and moods.
 - `PlayerEmotes.cs` patches `TypeText.CheckCommands` to add emote commands, and
   `SimPlayerLanguage.GetTargetedHello` so greetings can bring up shared memories.
+- `SimActions.cs` reads the AI's action tags and carries them out; `SimEscort.cs` steers sims for
+  guiding, following and waiting by standing in for their out-of-combat routine
+  (`SimPlayer.SoloPlayLogic` / `GroupedWithPlayerLogic`), handing back control whenever they're attacked.
 - `Ollama.cs` talks to the local Ollama server on a background thread (and can start it and pull
   the model); `AIChat.cs` patches `TypeText.CheckInput` to see what you type, decides which sim should
   answer (never an NPC), builds their prompt and prints the reply through the game's chat.
