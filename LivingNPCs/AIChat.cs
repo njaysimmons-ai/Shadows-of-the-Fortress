@@ -552,7 +552,13 @@ namespace LivingNPCs
             }
             else if (arg.StartsWith("model "))
             {
-                Plugin.AiModel.Value = arg.Substring(6).Trim();
+                string name = arg.Substring(6).Trim().ToLowerInvariant();
+                if (!Ollama.LooksLikeModel(name))
+                {
+                    UpdateSocialLog.LogAdd("'" + name + "' isn't a model name. Try /ai model qwen2.5:14b, llama3.1:8b or llama3.2:3b.", "yellow");
+                    return false;
+                }
+                Plugin.AiModel.Value = name;
                 UpdateSocialLog.LogAdd("Living NPCs: AI model set to " + Plugin.AiModel.Value + ".", "yellow");
                 AIChat.Prepare(quiet: false);
             }

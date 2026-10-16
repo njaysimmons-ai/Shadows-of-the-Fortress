@@ -108,6 +108,11 @@ function Choose-Model($vramGB) {
     return @{ Name = "llama3.2:3b"; Size = "2 GB"; Why = "it runs well on most PCs" }
 }
 
+# Model names look like "qwen2.5:14b", "llama3.1:8b" or "mistral-nemo".
+function Test-ModelName($name) {
+    return ($name -match '^[a-z0-9][a-z0-9._-]{2,}(:[a-z0-9._-]+)?$') -and -not ($name -match '^(yes|no|ok)$')
+}
+
 function Wait-ForOllama($exe) {
     for ($i = 0; $i -lt 30; $i++) {
         try {

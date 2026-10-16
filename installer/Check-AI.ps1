@@ -36,6 +36,15 @@ $enabled = Get-ConfigValue $paths.ConfigFile "AI Chat" "Enabled"
 $model = Get-ConfigValue $paths.ConfigFile "AI Chat" "Model"
 $url = Get-ConfigValue $paths.ConfigFile "AI Chat" "OllamaUrl"
 if (-not $model) { $model = "llama3.2:3b" }
+if (-not (Test-ModelName $model)) {
+    $suggested = (Choose-Model (Get-VideoMemoryGB)).Name
+    Note ("[FAIL] The AI model is set to '" + $model + "', which isn't a real model name.") "Red"
+    if (Ask "Change it to ${suggested}?") {
+        Set-ConfigValue $paths.ConfigFile "AI Chat" "Model" $suggested
+        $model = $suggested
+        Good "Model set to $suggested."
+    }
+}
 if ($url) { $OllamaUrl = $url.TrimEnd('/') }
 Info "Settings: AI enabled = $enabled, model = $model, Ollama address = $OllamaUrl"
 if ($enabled -eq "false") {

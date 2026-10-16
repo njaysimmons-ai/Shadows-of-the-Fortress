@@ -85,6 +85,14 @@ namespace LivingNPCs
         public static void Prepare(Action<string> status, Action<bool> ready)
         {
             string model = Plugin.AiModel.Value;
+            if (!LooksLikeModel(model))
+            {
+                LastError = "the model is set to '" + model + "', which isn't a model name. Type /ai model qwen2.5:14b (or llama3.1:8b, llama3.2:3b) to fix it";
+                Phase = "waiting for a valid model name";
+                Completed.Enqueue(() => status("Living NPCs: " + LastError + "."));
+                Completed.Enqueue(() => ready(false));
+                return;
+            }
             bool autoStart = Plugin.AiAutoStart.Value;
             bool autoPull = Plugin.AiAutoDownload.Value;
             Background(() =>
@@ -195,6 +203,12 @@ namespace LivingNPCs
                 }
             }
         }
+
+        /// <summary>Model names look like "qwen2.5:14b", "llama3.1:8b" or "mistral-nemo".</summary>
+        public static bool LooksLikeModel(string name) =>
+            !string.IsNullOrEmpty(name) &&
+            System.Text.RegularExpressions.Regex.IsMatch(name, @"^[a-z0-9][a-z0-9._-]{2,}(:[a-z0-9._-]+)?$") &&
+            !System.Text.RegularExpressions.Regex.IsMatch(name, @"^(yes|no|ok)$");
 
         private static void Post(Action<string> status, string message) => Completed.Enqueue(() => status(message));
         private static void Post(Action action) => Completed.Enqueue(action);

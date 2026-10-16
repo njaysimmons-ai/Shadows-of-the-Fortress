@@ -137,8 +137,13 @@ if (Ask "Set up AI chat?") {
     if ($ollama) {
         Say ""
         Say "Recommended model: $($model.Name) ($($model.Size)), because $($model.Why)." "White"
-        $choice = Read-Host "Press Enter to use it, or type another model name (e.g. llama3.1:8b, mistral-nemo, qwen2.5:7b)"
-        if ($choice.Trim()) { $model.Name = $choice.Trim() }
+        while ($true) {
+            $choice = (Read-Host "Press Enter to use $($model.Name), or type a different model name (e.g. llama3.1:8b)").Trim()
+            if (-not $choice -or $choice -match '^(y|yes|ok|n|no)$') { break }
+            if (Test-ModelName $choice) { $model.Name = $choice; break }
+            Say "'$choice' doesn't look like a model name. Model names look like qwen2.5:14b or llama3.1:8b." "Yellow"
+        }
+        Say "Using $($model.Name)." "Green"
 
         Set-ConfigValue $ConfigFile "AI Chat" "Enabled" "true"
         Set-ConfigValue $ConfigFile "AI Chat" "Model" $model.Name
