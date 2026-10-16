@@ -1020,3 +1020,24 @@ laughs and bows back dramatically.
 
 [emote.taunt.react.friend]
 laughs it off and shoves you playfully.
+
+# ======================================================================
+# KEEPING THEIR WORD (AI chat)
+# When a sim agrees in AI chat to meet you somewhere, they travel there and wait at the entrance.
+# They whisper you one of these when you arrive, then join your group.
+# ======================================================================
+
+[action.meet.arrived]
+i'm here at the entrance, {player}! come find me
+made it to {zone}, waiting by the entrance
+here! by the entrance whenever you're ready
+ok i'm at {zone}, where you at {player}?
+
+[action.meet.arrived.roleplayer]
+I await you at the gates of {zone}, {player}.
+
+[action.meet.arrived.terse]
+here. entrance
+
+[action.meet.arrived.hype]
+I'M HERE!! {zone} lets gooo

@@ -13,7 +13,7 @@ namespace LivingNPCs
     public class Plugin : BaseUnityPlugin
     {
         public const string Guid = "njaysimmons.erenshor.livingnpcs";
-        public const string Version = "0.4.4";
+        public const string Version = "0.5.0";
 
         internal static ManualLogSource Log;
         internal static DialogueBank Bank;
@@ -65,6 +65,7 @@ namespace LivingNPCs
         internal static ConfigEntry<float> AiTimeoutSeconds;
         internal static ConfigEntry<float> AiOverhearChance;
         internal static ConfigEntry<float> AiNearbyRadius;
+        internal static ConfigEntry<bool> AiActions;
         internal static ConfigEntry<bool> EnableFriendships;
         internal static ConfigEntry<float> FriendshipSpeed;
         internal static ConfigEntry<float> FriendshipDailyCap;
@@ -118,6 +119,7 @@ namespace LivingNPCs
             AiOllamaPath = Config.Bind("AI Chat", "OllamaPath", "", "Full path to ollama.exe, if it isn't in the usual place.");
             AiStopOllamaOnQuit = Config.Bind("AI Chat", "StopOllamaOnQuit", true, "Close Ollama when you quit the game, if the mod started it.");
             AiTimeoutSeconds = Config.Bind("AI Chat", "ReplyTimeoutSeconds", 120f, "Give up on a reply after this long.");
+            AiActions = Config.Bind("AI Chat", "SimsActOnWhatTheySay", true, "Sims do what they agree to in AI chat: join your group, meet you in a zone, come find you, leave, or emote.");
             AiNearbyRadius = Config.Bind("AI Chat", "NearbyAnswerRadius", 6f, "If you talk without targeting anyone, the closest sim within this many metres answers. 0 turns it off.");
             AiOverhearChance = Config.Bind("AI Chat", "OverhearChance", 0.35f, "Chance (0-1) a nearby sim answers a question you ask out loud without naming anyone.");
 

@@ -50,6 +50,7 @@ namespace LivingNPCs
                     nextBanter = now + RandomRange(Plugin.BanterMinSeconds.Value, Plugin.BanterMaxSeconds.Value);
                 }
                 Bonds.DecayMoods(Tick);
+                SimActions.Tick();
 
                 List<SimPlayer> group = GroupSims();
                 WatchPlayer(group);

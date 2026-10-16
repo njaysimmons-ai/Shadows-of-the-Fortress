@@ -43,6 +43,19 @@ It closes Ollama again when you quit.
 - **/p message** to your group: a groupmate answers (or the one you named).
 - **/w Name message**: whisper any sim, even one in another zone.
 
+**Sims keep their word.** When a sim agrees to something, it actually happens:
+
+| They say | They do |
+|---|---|
+| "sure, i'll join you" | join your group (as if you'd invited them) |
+| "let's head to Rockshade, meet at the entrance" | walk off, travel there, wait at the entrance, whisper you when you arrive, then group up |
+| "omw!" (from another zone) | travel to your zone and join you when they get there |
+| "gotta run, cya" | leave your group |
+| waves, dances, sits, cheers | do it, with the animation |
+
+The AI marks what it agreed to with a hidden tag that the mod strips from chat and carries out
+with the game's own mechanics. Turn it off with `SimsActOnWhatTheySay` in the settings.
+
 Messages about grouping, invites and trading are left to the game's own sims, so the game's group,
 invite and trade handling isn't affected.
 Typing quirks still apply: a lowercase chill sim stays lowercase, a hype sim stays loud.

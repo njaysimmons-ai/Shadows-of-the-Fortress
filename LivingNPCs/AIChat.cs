@@ -262,12 +262,15 @@ namespace LivingNPCs
                     lastFailureNotice = Time.time;
                     TryChat("Living NPCs: " + who + " couldn't answer: " + Ollama.LastError + ". Type /ai test to check.", "yellow");
                 }
+                // Pull out any action the sim agreed to before tidying the text (tags can trail off the first line).
+                reply = SimActions.Extract(reply, out string action, out string argument);
                 reply = Clean(reply, who, SimLife.PersonaOf(sim) != "roleplayer");
                 if (string.IsNullOrEmpty(reply)) return;
+                string remembered = action == null ? reply : reply + " [" + action + (argument != null ? ":" + argument : "") + "]";
                 if (remember)
                 {
                     Friendships friends = Plugin.FriendsNow();
-                    friends.AddConversation(key, new Ollama.Message("user", heard), new Ollama.Message("assistant", reply));
+                    friends.AddConversation(key, new Ollama.Message("user", heard), new Ollama.Message("assistant", remembered));
                     friends.Add(key, 1f);
                     if (!ToSummarize.TryGetValue(key, out Pending p)) ToSummarize[key] = p = new Pending { Name = who, Sim = sim };
                     p.Exchanges++;
@@ -276,13 +279,17 @@ namespace LivingNPCs
                 else
                 {
                     history.Add(new Ollama.Message("user", heard));
-                    history.Add(new Ollama.Message("assistant", reply));
+                    history.Add(new Ollama.Message("assistant", remembered));
                     while (history.Count > HistoryLength * 2) history.RemoveAt(0);
                 }
 
                 // A short pause to "type", so replies don't arrive impossibly fast.
                 float typing = Mathf.Clamp(reply.Length * 0.035f - (Time.time - asked), 0.3f, 3f);
-                Scheduler.After(typing, () => Deliver(who, sim, channel, reply));
+                Scheduler.After(typing, () =>
+                {
+                    Deliver(who, sim, channel, reply);
+                    if (action != null) Scheduler.After(UnityEngine.Random.Range(1f, 2.5f), () => SimActions.Perform(who, sim, action, argument));
+                });
             });
         }
 
@@ -425,9 +432,19 @@ namespace LivingNPCs
             tokens["opinion"] = opinion >= 15f ? "you really like them" : opinion >= 6f ? "you like them" : opinion < 2f ? "you're wary of them" : "you don't know them well";
             tokens["grouped"] = sim != null && sim.InGroup ? "You are in a group with them right now." : "You are not grouped with them.";
             tokens["history"] = HistoryText(who);
+            tokens["zones"] = SimActions.ZoneList();
+            string actions = Section("ai.actions");
+            if (string.IsNullOrEmpty(actions)) actions = DefaultActions;
+            tokens["actions"] = Plugin.AiActions.Value ? actions : "";
+            tokens["simzone"] = tracking != null ? GetCommonTerms.GetZoneTerm(tracking.CurScene) : WorldContext.Zone;
             tokens["channel"] = channel == Channel.Party ? "group chat" : channel == Channel.Whisper ? "a private whisper" : "local /say chat";
-            return Fill(Section("ai.sim"), tokens) + " " + Fill(Section("ai.world"), tokens);
+            string prompt = Section("ai.sim");
+            // Older copies of ai.txt don't mention actions; add them so sims can still act.
+            if (Plugin.AiActions.Value && !prompt.Contains("{actions}")) prompt += " {actions}";
+            return Fill(Fill(prompt, tokens), tokens) + " " + Fill(Section("ai.world"), tokens);
         }
+
+        private const string DefaultActions = "You can act on what you say. If you agree to do something right now, end your message with ONE action tag: [JOIN] to join {player}'s group (only if you're in the same zone), [COME] to travel to where {player} is and join them, [MEET:zone name] to go to a zone and wait at its entrance for {player}, [LEAVE] to leave {player}'s group, or an emote: [WAVE] [DANCE] [SIT] [CHEER] [BOW] [LAUGH]. Only use a tag when you really mean to do it now, and never promise to go somewhere or join without the tag. Zones you can name: {zones}. You are currently in {simzone}.";
 
         private static Dictionary<string, string> BaseTokens()
         {
