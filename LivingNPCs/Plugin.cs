@@ -13,7 +13,7 @@ namespace LivingNPCs
     public class Plugin : BaseUnityPlugin
     {
         public const string Guid = "njaysimmons.erenshor.livingnpcs";
-        public const string Version = "0.6.0";
+        public const string Version = "0.6.1";
 
         internal static ManualLogSource Log;
         internal static DialogueBank Bank;
@@ -21,6 +21,8 @@ namespace LivingNPCs
         internal static DialogueBank Life = new DialogueBank();
         internal static SimBonds Bonds;
         internal static DialogueBank Ai = new DialogueBank();
+        /// <summary>The ai.txt built into the mod, used for any section missing from the player's copy.</summary>
+        internal static DialogueBank AiDefaults = new DialogueBank();
         internal static Friendships Friends;
 
         /// <summary>The current character's friendships, loading them if the character changed.</summary>
@@ -179,12 +181,44 @@ namespace LivingNPCs
         {
             Bank = LoadText(dialoguePath, "dialogue.txt") ?? Bank ?? new DialogueBank();
             Life = LoadText(lifePath, "life.txt") ?? Life;
+            AiDefaults = LoadEmbedded("ai.txt") ?? AiDefaults;
             Ai = LoadText(aiPath, "ai.txt") ?? Ai;
+            RepairAiFile();
             DialogueBank sims = LoadText(simsPath, "sims.txt");
             if (sims != null)
             {
                 SimVoices.Load(sims);
                 Log.LogInfo("Loaded " + SimVoices.PersonaCount + " sim personas.");
+            }
+        }
+
+        private static DialogueBank LoadEmbedded(string resource)
+        {
+            using (Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("LivingNPCs." + resource))
+            {
+                if (stream == null) return null;
+                using (var reader = new StreamReader(stream)) return DialogueBank.Parse(reader);
+            }
+        }
+
+        /// <summary>
+        /// Version 0.6.0 shipped an ai.txt with its personality, lore and memory sections cut off. If the
+        /// player's copy has no [ai.sim] section, keep it as a backup and put the full default back.
+        /// </summary>
+        private void RepairAiFile()
+        {
+            if (Ai.Has("ai.sim")) return;
+            try
+            {
+                string backup = aiPath + ".damaged-backup";
+                if (File.Exists(backup)) File.Delete(backup);
+                if (File.Exists(aiPath)) File.Move(aiPath, backup);
+                Ai = LoadText(aiPath, "ai.txt") ?? Ai;
+                Log.LogWarning("ai.txt was missing its personality section; restored the default (old copy kept as ai.txt.damaged-backup).");
+            }
+            catch (Exception e)
+            {
+                Log.LogError("Couldn't repair ai.txt: " + e);
             }
         }
 

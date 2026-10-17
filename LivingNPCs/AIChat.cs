@@ -220,6 +220,14 @@ namespace LivingNPCs
             }
         }
 
+        /// <summary>True if the AI is about to answer this whisper, so the game's canned reply should be skipped.</summary>
+        internal static bool AnswersWhisper(string target, string message)
+        {
+            if (!Plugin.AiEnabled.Value || !Ready || string.IsNullOrEmpty(message) || GameCommandWords.IsMatch(message)) return false;
+            SimPlayerTracking t = GameData.SimMngr?.Sims?.Find(s => string.Equals(s.SimName, target, StringComparison.OrdinalIgnoreCase));
+            return t != null && !t.IsGMCharacter && t.ignorePlayer <= 0f;
+        }
+
         private static bool Mentions(string text, string name) =>
             !string.IsNullOrEmpty(name) && Regex.IsMatch(text, @"\b" + Regex.Escape(name) + @"\b", RegexOptions.IgnoreCase);
 
@@ -237,7 +245,7 @@ namespace LivingNPCs
             string key = Friendships.Sim(who);
             bool remember = FriendshipEvents.On;
             string friendship = remember ? FriendshipText(key, who) : "";
-            string system = SimPrompt(who, sim, channel).Replace("{friendship}", friendship);
+            string system = SimPrompt(who, sim, channel, playerText).Replace("{friendship}", friendship);
             List<Ollama.Message> history;
             if (remember)
             {
@@ -404,8 +412,9 @@ namespace LivingNPCs
 
         private static string Section(string name)
         {
+            DialogueBank bank = Plugin.Ai.Has(name) ? Plugin.Ai : Plugin.AiDefaults;
             var sb = new StringBuilder();
-            foreach (string line in Plugin.Ai.Get(name)) sb.Append(line).Append(' ');
+            foreach (string line in bank.Get(name)) sb.Append(line).Append(' ');
             return sb.ToString().Trim();
         }
 
@@ -415,7 +424,17 @@ namespace LivingNPCs
             return text;
         }
 
-        private static string SimPrompt(string who, SimPlayer sim, Channel channel)
+        // Words that mean the player wants the sim to do something, so the full action details are worth sending.
+        private static readonly Regex Request = new Regex(
+            @"\b(take|show|guide|lead|where|which way|follow|wait|stay|buff|help|join|group|come|meet|go to|head to|bring|party|leave|bank|vendor|shop|merchant)\b",
+            RegexOptions.IgnoreCase);
+
+        // Words that mean the conversation is about the world's history, so the lore summary is worth sending.
+        private static readonly Regex LoreTalk = new Regex(
+            @"\b(lore|god|gods|goddess|history|legend|brax|braxonia|sivakaya|soluna|astra|azynthi|fernalla|vitheo|wisp|eldrin|reaver|rockshade|void|monolith|duskenlight)\b",
+            RegexOptions.IgnoreCase);
+
+        private static string SimPrompt(string who, SimPlayer sim, Channel channel, string playerText)
         {
             SimPlayerTracking tracking = GameData.SimMngr.Sims.Find(s => s.SimName == who);
             string persona = SimLife.PersonaOf(sim);
@@ -432,25 +451,68 @@ namespace LivingNPCs
             tokens["opinion"] = opinion >= 15f ? "you really like them" : opinion >= 6f ? "you like them" : opinion < 2f ? "you're wary of them" : "you don't know them well";
             tokens["grouped"] = sim != null && sim.InGroup ? "You are in a group with them right now." : "You are not grouped with them.";
             tokens["history"] = HistoryText(who);
-            tokens["zones"] = SimActions.ZoneList();
-            string actions = Section("ai.actions");
-            if (string.IsNullOrEmpty(actions) || !actions.Contains("[GUIDE")) actions = DefaultActions;
-            tokens["actions"] = Plugin.AiActions.Value ? actions : "";
-            tokens["simzone"] = tracking != null ? GetCommonTerms.GetZoneTerm(tracking.CurScene) : WorldContext.Zone;
-            bool sameZone = tracking != null && tracking.CurScene == WorldContext.Zone;
-            tokens["places"] = sameZone ? SimEscort.PlacesHere() : "(you're not in the same zone, so you can't guide right now)";
-            List<Spell> buffs = sameZone ? SimActions.BuffsFor(sim) : new List<Spell>();
-            var buffNames = buffs.ConvertAll(b => b.SpellName);
-            tokens["buffs"] = buffs.Count > 0 ? "Buffs you can cast on others: " + string.Join(", ", buffNames) + "."
-                : "You have no buffs you can cast on others right now, so never offer one.";
             tokens["channel"] = channel == Channel.Party ? "group chat" : channel == Channel.Whisper ? "a private whisper" : "local /say chat";
-            string prompt = Section("ai.sim");
-            // Older copies of ai.txt don't mention actions; add them so sims can still act.
-            if (Plugin.AiActions.Value && !prompt.Contains("{actions}")) prompt += " {actions}";
-            return Fill(Fill(prompt, tokens), tokens) + " " + Fill(Section("ai.world"), tokens);
+            tokens["examples"] = VoiceExamples(sim);
+
+            var parts = new List<string> { Section("ai.sim") };
+
+            if (Plugin.AiActions.Value)
+            {
+                bool asking = Request.IsMatch(playerText ?? "");
+                if (asking)
+                {
+                    bool sameZone = tracking != null && tracking.CurScene == WorldContext.Zone;
+                    tokens["zones"] = SimActions.ZoneList();
+                    tokens["simzone"] = tracking != null ? GetCommonTerms.GetZoneTerm(tracking.CurScene) : WorldContext.Zone;
+                    tokens["places"] = sameZone ? SimEscort.PlacesHere() : "(you're not in the same zone, so you can't guide right now)";
+                    List<Spell> buffs = sameZone ? SimActions.BuffsFor(sim) : new List<Spell>();
+                    tokens["buffs"] = buffs.Count > 0
+                        ? "Buffs you can cast on others: " + string.Join(", ", buffs.ConvertAll(b => b.SpellName)) + "."
+                        : "You have no buffs you can cast on others right now, so never offer one.";
+                    parts.Add(Section("ai.actions"));
+                }
+                else
+                {
+                    parts.Add(Section("ai.actions.short"));
+                }
+            }
+
+            bool lore = LoreTalk.IsMatch(playerText ?? "") || persona == "lorehound" || persona == "roleplayer";
+            parts.Add(Section(lore ? "ai.world" : "ai.world.short"));
+            parts.Add(Section("ai.style"));
+
+            string prompt = string.Join(" ", parts);
+            return Fill(prompt, tokens);
         }
 
-        private const string DefaultActions = "You can act on what you say. If you agree to do something right now, end your message with ONE action tag: [JOIN] to join {player}'s group (same zone only), [HELP] to join just to help with a fight and leave afterwards, [COME] to travel to where {player} is and join them, [MEET:zone name] to go to a zone and wait at its entrance for {player}, [GUIDE:place] to lead {player} to a place or NPC in your current zone, [FOLLOW] to follow {player} around without grouping, [WAIT] to stay where you are, [BUFF] to cast your buffs on {player}, [LEAVE] to leave {player}'s group, or an emote: [WAVE] [DANCE] [SIT] [CHEER] [BOW] [LAUGH]. Only use a tag when you really mean to do it now, and never promise something without the tag. Never offer to trade, sell or give items. Zones you can name: {zones}. You are currently in {simzone}. Places and NPCs in this zone you can guide to: {places}. {buffs}";
+        /// <summary>
+        /// A few things this sim has typed (its own phrase lists, persona lines included), run through its
+        /// typing quirks, so the model can copy the voice. Examples beat descriptions for small models.
+        /// </summary>
+        private static string VoiceExamples(SimPlayer sim)
+        {
+            SimPlayerLanguage lang = sim != null ? sim.GetComponent<SimPlayerLanguage>() : null;
+            if (lang == null) return "(nothing yet)";
+            var pool = new List<string>();
+            foreach (var list in new[] { lang.GenericLines, lang.Confirms, lang.Impressed, lang.Died, lang.RetortsFun, lang.LevelUpCelebration, lang.Gratitude, lang.DeclineGroup })
+            {
+                if (list == null) continue;
+                foreach (string line in list)
+                {
+                    if (!string.IsNullOrEmpty(line) && line.Length > 3 && !line.Contains("II") && !pool.Contains(line)) pool.Add(line);
+                }
+            }
+            if (pool.Count == 0) return "(nothing yet)";
+            var picked = new List<string>();
+            for (int i = 0; i < 6 && pool.Count > 0; i++)
+            {
+                int k = Plugin.Rng.Next(pool.Count);
+                string line = Regex.Replace(pool[k], @"\bNN\b", WorldContext.PlayerName);
+                picked.Add(GameData.SimMngr != null ? GameData.SimMngr.PersonalizeString(line, sim) : line);
+                pool.RemoveAt(k);
+            }
+            return "\"" + string.Join("\" / \"", picked) + "\"";
+        }
 
         private static Dictionary<string, string> BaseTokens()
         {
@@ -476,6 +538,31 @@ namespace LivingNPCs
             if (h.SimDeaths > 0) parts.Add("died " + h.SimDeaths + " times in their groups");
             if (h.Levels > 0) parts.Add("watched them level up " + h.Levels + " times");
             return parts.Count == 0 ? "You've met but haven't done much together." : "You have " + string.Join("; ", parts) + ".";
+        }
+    }
+
+    /// <summary>
+    /// When the AI answers a whisper, the game's own canned whisper reply is skipped so you don't get two
+    /// answers. The "[WHISPER TO]" echo is kept. Whispers about invites, trades and guilds still go to the game.
+    /// </summary>
+    [HarmonyPatch(typeof(SimPlayerMngr), nameof(SimPlayerMngr.SimReceiveMsg))]
+    internal static class AIWhisperPatch
+    {
+        private static bool Prefix(string targ, string incomingMsg)
+        {
+            try
+            {
+                if (!AIChat.AnswersWhisper(targ, incomingMsg)) return true;
+                SimPlayerTracking t = GameData.SimMngr.Sims.Find(s => string.Equals(s.SimName, targ, StringComparison.OrdinalIgnoreCase));
+                UpdateSocialLog.LogAdd(new ChatLogLine("[WHISPER TO] " + t.SimName + ": " + incomingMsg, ChatLogLine.LogType.Whisper, "#FF62D1"));
+                GameData.TextInput.LastPlayerMsg = t.SimName;
+                return false;
+            }
+            catch (Exception e)
+            {
+                Plugin.Log.LogError("Whisper hook failed: " + e);
+                return true;
+            }
         }
     }
 
