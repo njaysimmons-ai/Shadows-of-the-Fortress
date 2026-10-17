@@ -13,7 +13,7 @@ namespace LivingNPCs
     public class Plugin : BaseUnityPlugin
     {
         public const string Guid = "njaysimmons.erenshor.livingnpcs";
-        public const string Version = "0.6.1";
+        public const string Version = "0.6.2";
 
         internal static ManualLogSource Log;
         internal static DialogueBank Bank;
@@ -145,6 +145,7 @@ namespace LivingNPCs
             Memory = new NpcMemory(Path.Combine(folder, "memory"));
             Bonds = new SimBonds(Path.Combine(folder, "memory"));
             Friends = new Friendships(Path.Combine(folder, "memory"));
+            WorldIndex.Load(Path.Combine(folder, "memory"));
             Friends.TierReached += FriendshipEvents.OnTierReached;
             LoadDialogue();
 
@@ -170,6 +171,7 @@ namespace LivingNPCs
                 Memory.Save();
                 Bonds.Save();
                 Friends.Save();
+                WorldIndex.Save();
             }
             catch (Exception e)
             {

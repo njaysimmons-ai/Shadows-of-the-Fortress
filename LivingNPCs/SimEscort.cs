@@ -24,6 +24,13 @@ namespace LivingNPCs
             public string TargetName;
             public float Until;
             public bool ToldToCatchUp;
+            public Action<SimPlayer> OnArrive;   // replaces the usual "points out X" ending
+
+            // Stuck detection: if they barely move for a while, try another route, then give up gracefully.
+            public Vector3 LastProgressAt;
+            public float LastProgressTime;
+            public int Repaths;
+            public float NextRepath;
         }
 
         private static readonly Dictionary<SimPlayer, Job> Jobs = new Dictionary<SimPlayer, Job>();
@@ -50,8 +57,34 @@ namespace LivingNPCs
         public static bool Guide(SimPlayer sim, string place)
         {
             if (!FindPlace(place, out Vector3 where, out string name)) return false;
-            Jobs[sim] = new Job { Mode = Mode.Guide, Target = where, TargetName = name, Until = Time.time + 6f * 60f };
+            StartGuide(sim, where, name, null);
             return true;
+        }
+
+        /// <summary>Guides you to the exit that leads into the given zone. Returns false if there's no such exit here.</summary>
+        public static bool GuideToExit(SimPlayer sim, string destinationZone, Action<SimPlayer> onArrive)
+        {
+            Zoneline best = null;
+            float bestDistance = float.MaxValue;
+            Vector3 from = sim.transform.position;
+            foreach (Zoneline z in UnityEngine.Object.FindObjectsOfType<Zoneline>())
+            {
+                if (z == null || !string.Equals(z.DestinationZone, destinationZone, StringComparison.OrdinalIgnoreCase)) continue;
+                float d = Vector3.Distance(from, z.transform.position);
+                if (d < bestDistance) { bestDistance = d; best = z; }
+            }
+            if (best == null) return false;
+            StartGuide(sim, best.transform.position, "the way to " + GetCommonTerms.GetZoneTerm(destinationZone), onArrive);
+            return true;
+        }
+
+        private static void StartGuide(SimPlayer sim, Vector3 where, string name, Action<SimPlayer> onArrive)
+        {
+            Jobs[sim] = new Job
+            {
+                Mode = Mode.Guide, Target = where, TargetName = name, OnArrive = onArrive, Until = Time.time + 8f * 60f,
+                LastProgressAt = sim.transform.position, LastProgressTime = Time.time,
+            };
         }
 
         // ---------------------------------------------------------------- places in this zone
@@ -171,21 +204,43 @@ namespace LivingNPCs
 
         // ---------------------------------------------------------------- movement
 
-        private static void MoveTo(SimPlayer sim, Vector3 dest, float speed)
+        /// <summary>
+        /// The closest walkable point to a target. NPCs often stand behind counters or on platforms, so search
+        /// outward instead of giving up (the game's own helper only looks 2 metres away).
+        /// </summary>
+        private static Vector3 Reachable(Vector3 target)
+        {
+            foreach (float radius in new[] { 2f, 4f, 8f, 15f })
+            {
+                if (NavMesh.SamplePosition(target, out NavMeshHit hit, radius, NavMesh.AllAreas)) return hit.position;
+            }
+            return target;
+        }
+
+        private static void MoveTo(SimPlayer sim, Vector3 dest, float speed, bool force = false)
         {
             NavMeshAgent nav = Nav(sim);
-            if (nav == null) return;
+            if (nav == null || !nav.isOnNavMesh) return;
             nav.speed = speed;
-            if (nav.isOnNavMesh) nav.isStopped = false;
+            nav.isStopped = false;
             Animator anim = sim.GetComponent<Character>()?.GetMyAnim();
             if (anim != null)
             {
                 anim.SetBool("Walking", true);
                 anim.SetBool("Patrol", false);
             }
-            NPC npc = sim.GetComponent<NPC>();
-            Vector3 safe = GameData.GetSafeNavMeshPoint(dest);
-            if (npc != null && npc.NeedsNavUpdate(safe)) npc.HighPriorityNavUpdate(safe);
+            Vector3 point = Reachable(dest);
+            if (force || Vector3.Distance(nav.destination, point) > 0.5f) nav.SetDestination(point);
+        }
+
+        /// <summary>True once the sim is as close as walking can get it.</summary>
+        private static bool Arrived(SimPlayer sim, Job job)
+        {
+            if (Vector3.Distance(sim.transform.position, job.Target) < 5f) return true;
+            NavMeshAgent nav = Nav(sim);
+            return nav != null && nav.isOnNavMesh && !nav.pathPending && nav.hasPath &&
+                   Vector3.Distance(nav.destination, Reachable(job.Target)) < 1f &&
+                   nav.remainingDistance <= nav.stoppingDistance + 1.5f;
         }
 
         private static void Halt(SimPlayer sim)
@@ -233,21 +288,45 @@ namespace LivingNPCs
                     break;
 
                 case Mode.Guide:
-                    if (Vector3.Distance(me, job.Target) < 4f)
+                    if (Arrived(sim, job) || job.Repaths >= 3)
                     {
                         Halt(sim);
                         Speech.Face(sim, job.Target);
                         Jobs.Remove(sim);
+                        if (job.OnArrive != null)
+                        {
+                            job.OnArrive(sim);
+                            return true;
+                        }
                         Speech.Emote(sim.name, "points out " + job.TargetName + ".");
-                        string line = Lines.Fill(Lines.Pick("action.guide.arrived", SimLife.PersonaOf(sim)) ?? "here you go, {place}!",
+                        string section = job.Repaths >= 3 ? "action.guide.close" : "action.guide.arrived";
+                        string fallback = job.Repaths >= 3 ? "it's right over there, {place}" : "here you go, {place}!";
+                        string line = Lines.Fill(Lines.Pick(section, SimLife.PersonaOf(sim)) ?? fallback,
                             new Dictionary<string, string> { ["place"] = job.TargetName, ["player"] = WorldContext.PlayerName });
                         Scheduler.After(1.2f, () => Speech.Say(sim, line));
+                        return true;
+                    }
+                    // Stuck? Barely moved in 6 seconds while not waiting for you: try a fresh route.
+                    if (Vector3.Distance(me, job.LastProgressAt) > 1.5f)
+                    {
+                        job.LastProgressAt = me;
+                        job.LastProgressTime = Time.time;
+                    }
+                    else if (!job.ToldToCatchUp && Time.time - job.LastProgressTime > 6f && Time.time > job.NextRepath)
+                    {
+                        job.Repaths++;
+                        job.NextRepath = Time.time + 3f;
+                        job.LastProgressTime = Time.time;
+                        Vector3 nudge = job.Target + new Vector3(UnityEngine.Random.Range(-3f, 3f), 0f, UnityEngine.Random.Range(-3f, 3f));
+                        MoveTo(sim, nudge, run * 0.85f, force: true);
                         return true;
                     }
                     if (Vector3.Distance(me, player) > 14f)
                     {
                         // Don't lose the person you're guiding.
                         Halt(sim);
+                        job.LastProgressTime = Time.time;
+                        job.LastProgressAt = me;
                         Speech.Face(sim, player);
                         if (!job.ToldToCatchUp)
                         {

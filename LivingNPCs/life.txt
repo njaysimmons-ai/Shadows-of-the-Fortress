@@ -1078,3 +1078,26 @@ there. you owe me one
 
 [action.help.done.roleplayer]
 Our battle is won. Until next time, {player}!
+
+[action.guide.close]
+it's right over there, {place}
+can't get closer than this, but {place} is just there
+{place} is right past here, you'll see them
+
+[action.guide.zoneexit]
+through here to {next}, then we keep going to {final}
+this way, {next} first, {final} after that
+through {next}, stick with me
+
+[action.guide.zoneexit.final]
+{next} is right through here!
+here's the way into {next}
+
+[action.guide.continue]
+this way, {final}'s not far
+keep following me, {final}'s this way
+ok almost there, {final} is close
+
+[action.guide.zonearrived]
+made it, welcome to {final}!
+here we are, {final}

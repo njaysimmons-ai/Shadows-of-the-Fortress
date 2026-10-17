@@ -28,6 +28,16 @@ namespace LivingNPCs
         private static readonly List<Meeting> Meetings = new List<Meeting>();
         private static readonly Dictionary<string, float> PendingJoins = new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase);
 
+        // Multi-zone guiding: who is leading you where, continued each time you change zone together.
+        private class Route
+        {
+            public string Sim;
+            public string FinalZone;
+            public string Npc;      // null when the destination is the zone itself
+            public float Until;
+        }
+        private static readonly List<Route> Routes = new List<Route>();
+
         // Sims who joined just to help with a fight, and when they'll give up waiting for one.
         private static readonly Dictionary<string, float> Helpers = new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase);
         private static float nextTick;
@@ -114,7 +124,9 @@ namespace LivingNPCs
                         break;
                     case "GUIDE":
                         if (!here) break;
-                        if (!SimEscort.Guide(sim, argument))
+                        Routes.RemoveAll(r => string.Equals(r.Sim, sim.name, StringComparison.OrdinalIgnoreCase));
+                        if (SimEscort.Guide(sim, argument)) break;
+                        if (!GuideElsewhere(sim, argument))
                         {
                             string lost = Lines.Pick("action.guide.unknown", SimLife.PersonaOf(sim)) ?? "hm, actually i'm not sure where that is";
                             Scheduler.After(1.5f, () => Speech.Say(sim, lost));
@@ -161,6 +173,105 @@ namespace LivingNPCs
                 string why = full ? "oh wait, your group's full" : "hm, can't join, we're too far apart in level i think";
                 Scheduler.After(1.5f, () => Speech.Say(sim, why));
             }
+        }
+
+        /// <summary>
+        /// The place isn't in this zone: work out which zone it's in (a zone name, or an NPC the mod has seen
+        /// on your travels), join up so you cross zones together, and lead you to the right exit.
+        /// </summary>
+        private static bool GuideElsewhere(SimPlayer sim, string target)
+        {
+            string here = WorldContext.Zone;
+            string zone = FindZone(target);
+            string npc = null;
+            if (zone == null && WorldIndex.FindNpc(target, out string npcName, out string npcZone))
+            {
+                zone = npcZone;
+                npc = npcName;
+            }
+            if (zone == null || string.Equals(zone, here, StringComparison.OrdinalIgnoreCase)) return false;
+
+            var route = new Route { Sim = sim.name, FinalZone = zone, Npc = npc, Until = Time.time + 25f * 60f };
+            if (!LeadToward(sim, route)) return false;
+            Routes.Add(route);
+            // Groupmates come through zone lines with you, so the sim can keep guiding on the other side.
+            if (!sim.InGroup) Join(sim);
+            return true;
+        }
+
+        /// <summary>Walks you to the exit for the next zone on the route. Returns false if there's no known way.</summary>
+        private static bool LeadToward(SimPlayer sim, Route route)
+        {
+            string hop = WorldIndex.NextHop(WorldContext.Zone, route.FinalZone);
+            if (hop == null) return false;
+            string finalName = route.Npc ?? GetCommonTerms.GetZoneTerm(route.FinalZone);
+            bool lastHop = string.Equals(hop, route.FinalZone, StringComparison.OrdinalIgnoreCase);
+            return SimEscort.GuideToExit(sim, hop, s =>
+            {
+                Speech.Emote(s.name, "points to the way to " + GetCommonTerms.GetZoneTerm(hop) + ".");
+                string section = lastHop && route.Npc == null ? "action.guide.zoneexit.final" : "action.guide.zoneexit";
+                string line = Lines.Fill(Lines.Pick(section, SimLife.PersonaOf(s)) ?? "through here to {next}, then we'll find {final}",
+                    new Dictionary<string, string>
+                    {
+                        ["next"] = GetCommonTerms.GetZoneTerm(hop),
+                        ["final"] = finalName,
+                        ["player"] = WorldContext.PlayerName,
+                    });
+                Scheduler.After(1.2f, () => Speech.Say(s, line));
+            });
+        }
+
+        /// <summary>Called by SimLife when you arrive in a new zone: carry on any routes in progress.</summary>
+        public static void OnZoneChanged()
+        {
+            WorldIndex.Scan();
+            for (int i = Routes.Count - 1; i >= 0; i--)
+            {
+                Route route = Routes[i];
+                if (Time.time > route.Until) { Routes.RemoveAt(i); continue; }
+                ContinueRoute(route, 0);
+            }
+        }
+
+        /// <summary>Groupmates take a moment to appear after a zone change, so retry for a while.</summary>
+        private static void ContinueRoute(Route route, int attempt)
+        {
+            SimPlayerTracking t = FriendshipEvents.Tracking(route.Sim);
+            SimPlayer sim = t?.MyAvatar;
+            if (sim == null || t.CurScene != WorldContext.Zone || !SimLife.Alive(sim))
+            {
+                if (attempt < 15) Scheduler.After(2f, () => ContinueRoute(route, attempt + 1));
+                else Routes.Remove(route);
+                return;
+            }
+            string persona = SimLife.PersonaOf(sim);
+            if (string.Equals(WorldContext.Zone, route.FinalZone, StringComparison.OrdinalIgnoreCase))
+            {
+                Routes.Remove(route);
+                if (route.Npc != null && SimEscort.Guide(sim, route.Npc))
+                {
+                    string go = Lines.Fill(Lines.Pick("action.guide.continue", persona) ?? "this way, {final}'s not far",
+                        new Dictionary<string, string> { ["final"] = route.Npc, ["player"] = WorldContext.PlayerName });
+                    Scheduler.After(2f, () => Speech.Party(sim, go));
+                }
+                else
+                {
+                    string made = Lines.Fill(Lines.Pick("action.guide.zonearrived", persona) ?? "made it, welcome to {final}!",
+                        new Dictionary<string, string> { ["final"] = GetCommonTerms.GetZoneTerm(route.FinalZone), ["player"] = WorldContext.PlayerName });
+                    Scheduler.After(2f, () => Speech.Party(sim, made));
+                }
+                return;
+            }
+            if (!LeadToward(sim, route))
+            {
+                Routes.Remove(route);
+                string lost = Lines.Pick("action.guide.unknown", persona) ?? "hm, i lost the way from here, sorry";
+                Scheduler.After(2f, () => Speech.Party(sim, lost));
+                return;
+            }
+            string onward = Lines.Fill(Lines.Pick("action.guide.continue", persona) ?? "keep following me, {final}'s this way",
+                new Dictionary<string, string> { ["final"] = route.Npc ?? GetCommonTerms.GetZoneTerm(route.FinalZone), ["player"] = WorldContext.PlayerName });
+            Scheduler.After(2f, () => Speech.Party(sim, onward));
         }
 
         private static void Leave(SimPlayer sim)

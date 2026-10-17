@@ -470,6 +470,8 @@ namespace LivingNPCs
                         ? "Buffs you can cast on others: " + string.Join(", ", buffs.ConvertAll(b => b.SpellName)) + "."
                         : "You have no buffs you can cast on others right now, so never offer one.";
                     parts.Add(Section("ai.actions"));
+                    parts.Add("You can also [GUIDE:name] to an NPC or zone somewhere else: you'll lead " + WorldContext.PlayerName +
+                              " to the right zone exit and keep guiding on the other side.");
                 }
                 else
                 {

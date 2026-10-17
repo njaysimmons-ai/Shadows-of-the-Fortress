@@ -46,6 +46,7 @@ namespace LivingNPCs
                     lastPos.Clear();
                     Bonds.Save();
                     Plugin.Friends.Save();
+                    Scheduler.After(4f, SimActions.OnZoneChanged);
                     nextIdle = now + 20f;
                     nextBanter = now + RandomRange(Plugin.BanterMinSeconds.Value, Plugin.BanterMaxSeconds.Value);
                 }
