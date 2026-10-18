@@ -104,6 +104,7 @@ Typing quirks still apply: a lowercase chill sim stays lowercase, a hype sim sta
 
 Chat commands still work: `/ai status`, `/ai on`, `/ai off`, `/ai test`, `/ai debug`,
 `/ai model mistral-nemo` (chat model) and `/ai model brain qwen2.5:7b` (thinking model; `brain same` turns it off).
+`/ai forget Name` clears your recent chat with a sim (their memories and feelings stay), which breaks them out of a rut.
 They're also in the config as `Model`, `ThinkingModel`, `Tone`, `RerollChangedSubjects` and the `[Guiding]` section.
 
 **If sims don't seem to use the AI:** type `/ai` (or `/ai status`). It says whether it's connected and what the last

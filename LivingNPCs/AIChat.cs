@@ -328,10 +328,13 @@ namespace LivingNPCs
                 // A canned "anyway, let's focus on the next raid", or a polite refusal on Emotional/Edgy: ask once more.
                 bool dodged = reply != null && Dodges(playerText, reply);
                 bool refused = reply != null && Tone() != "normal" && Refuses.IsMatch(reply);
-                if (!rerolled && Plugin.AiCatchRedirects.Value && (dodged || refused))
+                bool stalled = reply != null && Tone() != "normal" && Nudge.IsMatch(playerText ?? "") && Teases.IsMatch(reply);
+                if (!rerolled && Plugin.AiCatchRedirects.Value && (dodged || refused || stalled))
                 {
-                    DebugNote(who + (refused ? " went soft and refused" : " changed the subject") + "; asking for a reply that answers you");
-                    string why = refused
+                    DebugNote(who + (stalled ? " kept stalling" : refused ? " went soft and refused" : " changed the subject") + "; asking for a reply that answers you");
+                    string why = stalled
+                        ? "That reply only built up to it again without actually doing it. " + WorldContext.PlayerName + " is waiting. Stop teasing and actually do or say it right now, in this message."
+                        : refused
                         ? "That reply refused or lectured instead of playing along. You're a real person in an online game, not an assistant, and " +
                           WorldContext.PlayerName + " is someone you know. Do what they asked, in character, without hedging or moralising."
                         : "That reply dodged what " + WorldContext.PlayerName + " said and changed the subject.";
@@ -409,6 +412,31 @@ namespace LivingNPCs
             @"let'?s keep (?:it|things) (?:clean|friendly|civil|positive|pg)|keep it clean|no (?:curs|swear|cuss)\w*|" +
             @"i don'?t (?:curse|swear|cuss)|save the (?:cussing|cursing|swearing)|settle down|i'?m all about being)",
             RegexOptions.IgnoreCase);
+
+        // "do it", "go for it", "say it": the player is waiting on something the sim keeps promising.
+        private static readonly Regex Nudge = new Regex(
+            @"^\s*(?:(?:just|ok|okay|so|well|come on|cmon|c'?mon)\s+)?(?:do it|go for it|go on|say it|spit it out|come on|cmon|c'?mon|i'?m waiting|waiting|and\??|well\??|so\??|go ahead|let'?s hear it|then do it|prove it)[\s.!?]*$",
+            RegexOptions.IgnoreCase);
+        private static readonly Regex Teases = new Regex(
+            @"\b(here goes(?: nothing)?|here it (?:is|comes)|here'?s the deal|brace yourself|hope you(?:'re| are)? ready|you ready|are you ready|hope you can (?:take|handle) it|get ready|wait for it|don'?t act like|you asked for it|alright,? (?:fine|alright)|okay,? fine)\b",
+            RegexOptions.IgnoreCase);
+
+        /// <summary>/ai forget Name: clears a sim's recent chat (not their memories or feelings), to break a rut.</summary>
+        public static bool Forget(string name)
+        {
+            string key = Friendships.Sim(name);
+            bool any = History.Remove(name);
+            Friendships friends = Plugin.FriendsNow();
+            Friendship f = null;
+            foreach (var pair in friends.All) if (string.Equals(pair.Key, key, StringComparison.OrdinalIgnoreCase)) f = pair.Value;
+            if (f != null && f.Conversation.Count > 0)
+            {
+                f.Conversation.Clear();
+                friends.MarkDirty();
+                any = true;
+            }
+            return any;
+        }
 
         private static string Tone() => (Plugin.AiTone.Value ?? "Normal").ToLowerInvariant();
 
@@ -909,6 +937,15 @@ namespace LivingNPCs
                 if (brain) AIChat.SetThinkingModel(rest);
                 else AIChat.SetChatModel(rest);
             }
+            else if (arg.StartsWith("forget"))
+            {
+                string name = arg.Length > 6 ? arg.Substring(7).Trim() : "";
+                if (name.Length == 0 && GameData.PlayerControl.CurrentTarget != null) name = GameData.PlayerControl.CurrentTarget.name;
+                if (name.Length == 0) UpdateSocialLog.LogAdd("Usage: /ai forget Name (or target a sim). Clears your recent chat with them; memories and feelings stay.", "yellow");
+                else UpdateSocialLog.LogAdd(AIChat.Forget(name)
+                    ? "Living NPCs: " + name + "'s recent chat with you is cleared. Their memories and feelings about you are kept."
+                    : "Living NPCs: no recent chat with " + name + " to clear.", "yellow");
+            }
             else if (arg == "" || arg == "panel" || arg == "settings")
             {
                 AiPanel.Toggle();
@@ -924,7 +961,7 @@ namespace LivingNPCs
                                        (Host.Starts > 1 ? ", restarted " + (Host.Starts - 1) + " times" : ""), looping ? "yellow" : "red");
                 if (!string.IsNullOrEmpty(Ollama.LastError)) UpdateSocialLog.LogAdd("Last problem: " + Ollama.LastError, "yellow");
                 UpdateSocialLog.LogAdd("To talk: target a sim (or stand next to one) and type; /p for your group; /w Name to whisper. NPCs keep their scripted dialogue.", "yellow");
-                UpdateSocialLog.LogAdd("Commands: /ai (settings panel), /ai status, /ai test, /ai debug, /ai on, /ai off, /ai model NAME, /ai model brain NAME", "yellow");
+                UpdateSocialLog.LogAdd("Commands: /ai (settings panel), /ai status, /ai test, /ai debug, /ai on, /ai off, /ai model NAME, /ai model brain NAME, /ai forget Name", "yellow");
             }
             return false;
         }
