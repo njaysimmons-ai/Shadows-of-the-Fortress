@@ -314,6 +314,9 @@ namespace LivingNPCs
                 messages.Add(new Ollama.Message("system", "Reminder: you're " + who + ", a real player. Show your real feelings about " + WorldContext.PlayerName +
                     " openly and answer what they actually said. Never deflect or change the subject."));
             if (minor) messages.Add(new Ollama.Message("system", RealLife.MinorRules(person).Replace("{player}", WorldContext.PlayerName)));
+            messages.Add(new Ollama.Message("system", Plugin.AiReplyLength.Value == "Short"
+                ? "Reply with ONE short chat message, under " + Plugin.ReplyWords + " words, like someone typing fast in game chat. Finish your thought; never trail off."
+                : "Keep your reply under " + Plugin.ReplyWords + " words and finish your thought; never trail off mid-sentence."));
             messages.Add(new Ollama.Message("user", heard));
 
             float asked = Time.time;
@@ -351,7 +354,7 @@ namespace LivingNPCs
                         new Ollama.Message("system", why + " Write a new reply as " + who + " that responds directly to it, in your own voice and with your real feelings. " +
                             "Don't mention raids, bosses, grinding or plans."),
                     };
-                    Ollama.Chat(retry, 70, r => Handle(r ?? reply, true));
+                    Ollama.Chat(retry, Plugin.ReplyTokens, r => Handle(r ?? reply, true));
                     return;
                 }
 
@@ -403,7 +406,7 @@ namespace LivingNPCs
                 else Act(action, argument);
             }
 
-            Ollama.Chat(messages, 70, reply => Handle(reply, false));
+            Ollama.Chat(messages, Plugin.ReplyTokens, reply => Handle(reply, false));
         }
 
         // ================================================================ the thinking model
@@ -843,6 +846,7 @@ namespace LivingNPCs
                 ["playerlevel"] = p != null ? p.Level.ToString() : "1",
                 ["zone"] = WorldContext.Zone,
                 ["time"] = WorldContext.TimeOfDay,
+                ["replywords"] = Plugin.ReplyWords.ToString(),
             };
         }
 

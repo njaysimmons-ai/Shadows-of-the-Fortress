@@ -95,6 +95,8 @@ Typing quirks still apply: a lowercase chill sim stays lowercase, a hype sim sta
   for something (guide, join, buff...) and writes their memories. So you can chat with a lively model
   like `dolphin3:8b` or `mistral-nemo` and keep actions and memories sharp with `qwen2.5:7b`.
   Both stay loaded, so add their sizes together (about 10 GB for that pair).
+- **Reply length:** Short (a quick chat line, the default), Medium or Long. A reply that still runs
+  into the cap is cut back to its last full sentence instead of trailing off.
 - **Personality:** a Tone of Normal, Emotional (open about crushes, love, jealousy and hurt) or Edgy
   (also blunt, sarcastic, petty, swears). A reroll catches replies that dodge you with
   "anyway, let's focus on the next raid" and asks for a real answer instead.

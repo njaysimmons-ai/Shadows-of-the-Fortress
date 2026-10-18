@@ -275,6 +275,13 @@ namespace LivingNPCs
             GUILayout.Label(ToneNotes[picked], small);
 
             GUILayout.Space(10);
+            GUILayout.Label("Reply length", header);
+            string[] lengths = { "Short", "Medium", "Long" };
+            int len = Math.Max(0, Array.IndexOf(lengths, Plugin.AiReplyLength.Value));
+            int newLen = Choice(len, new[] { "Short (a quick line)", "Medium (1-2 sentences)", "Long (a few sentences)" });
+            if (newLen != len) Plugin.AiReplyLength.Value = lengths[newLen];
+
+            GUILayout.Space(10);
             GUILayout.Label("Conversation", header);
             Toggle(Plugin.AiCatchRedirects, "Reroll replies that change the subject",
                 "If a sim dodges you with \"anyway, let's focus on the next raid\", the AI is asked once more for a real answer.");

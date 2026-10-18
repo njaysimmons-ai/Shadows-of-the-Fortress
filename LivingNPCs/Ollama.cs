@@ -340,6 +340,18 @@ namespace LivingNPCs
 
         // ---------------------------------------------------------------- chat
 
+        /// <summary>Cuts a reply that was stopped by the length cap back to its last full sentence (or line, or clause).</summary>
+        public static string EndCleanly(string text)
+        {
+            string t = text.TrimEnd();
+            int cut = Math.Max(Math.Max(t.LastIndexOf(". "), t.LastIndexOf("! ")), Math.Max(t.LastIndexOf("? "), t.LastIndexOf('\n')));
+            if (cut >= t.Length / 3) return t.Substring(0, cut + 1).Trim();
+            int comma = Math.Max(t.LastIndexOf(", "), t.LastIndexOf(" - "));
+            if (comma >= t.Length / 3) return t.Substring(0, comma).Trim();
+            int space = t.LastIndexOf(' ');
+            return space > 0 ? t.Substring(0, space).TrimEnd(',', ';', ':', '-') : t;
+        }
+
         /// <summary>Asks the model for one reply. <paramref name="done"/> runs on the game thread with null on failure.</summary>
         public static void Chat(List<Message> messages, int maxTokens, Action<string> done, string model = null, float temperature = 0.85f)
         {
@@ -367,6 +379,8 @@ namespace LivingNPCs
                 {
                     string json = Http("POST", "/api/chat", payload, timeout);
                     reply = Json.Field(json, "content");
+                    // Hit the length cap mid-thought: end at the last complete sentence instead of trailing off.
+                    if (reply != null && Json.Field(json, "done_reason") == "length") reply = EndCleanly(reply);
                     if (reply == null) LastError = "Ollama answered with something unexpected: " + Truncate(Json.Field(json, "error") ?? json, 150);
                 }
                 catch (WebException e) when (e.Response is HttpWebResponse r)

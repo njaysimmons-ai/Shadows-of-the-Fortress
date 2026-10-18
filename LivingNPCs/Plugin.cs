@@ -13,7 +13,7 @@ namespace LivingNPCs
     public class Plugin : BaseUnityPlugin
     {
         public const string Guid = "njaysimmons.erenshor.livingnpcs";
-        public const string Version = "0.12.0";
+        public const string Version = "0.13.0";
 
         internal static ManualLogSource Log;
         internal static DialogueBank Bank;
@@ -71,6 +71,7 @@ namespace LivingNPCs
         internal static ConfigEntry<string> AiThinkingModel;
         internal static ConfigEntry<string> AiTone;
         internal static ConfigEntry<bool> AiCatchRedirects;
+        internal static ConfigEntry<string> AiReplyLength;
         internal static ConfigEntry<string> GuideStyle;
         internal static ConfigEntry<string> GuidePace;
         internal static ConfigEntry<bool> GuideAcrossZones;
@@ -92,6 +93,10 @@ namespace LivingNPCs
             !string.IsNullOrWhiteSpace(AiThinkingModel.Value) && Ollama.BrainOk ? AiThinkingModel.Value.Trim() : AiModel.Value;
 
         internal static bool TwoModels => BrainModel != AiModel.Value;
+
+        /// <summary>Word target and token cap for chat replies.</summary>
+        internal static int ReplyWords => AiReplyLength.Value == "Long" ? 45 : AiReplyLength.Value == "Medium" ? 25 : 14;
+        internal static int ReplyTokens => AiReplyLength.Value == "Long" ? 130 : AiReplyLength.Value == "Medium" ? 80 : 55;
 
         internal static float GuidePaceFactor => GuidePace.Value == "Slow" ? 0.55f : GuidePace.Value == "Fast" ? 1f : 0.85f;
 
@@ -149,6 +154,9 @@ namespace LivingNPCs
             AiTone = Config.Bind("AI Chat", "Tone", "Normal", new ConfigDescription(
                 "How openly sims show feelings. Normal: friendly MMO chat. Emotional: open about crushes, love, jealousy and hurt. Edgy: also blunt, sarcastic, petty and willing to swear.",
                 new AcceptableValueList<string>("Normal", "Emotional", "Edgy")));
+            AiReplyLength = Config.Bind("AI Chat", "ReplyLength", "Short", new ConfigDescription(
+                "How long sims' replies are. Short: a quick chat line. Medium: a sentence or two. Long: a few sentences.",
+                new AcceptableValueList<string>("Short", "Medium", "Long")));
             AiCatchRedirects = Config.Bind("AI Chat", "RerollChangedSubjects", true,
                 "If a sim dodges what you said with a generic \"anyway, let's focus on the next raid\", ask the AI once more for a reply that actually answers you.");
 
