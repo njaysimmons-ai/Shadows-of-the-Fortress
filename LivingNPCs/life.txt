@@ -1101,3 +1101,81 @@ ok almost there, {final} is close
 [action.guide.zonearrived]
 made it, welcome to {final}!
 here we are, {final}
+
+# ======================================================================
+# FEELINGS
+# Sims develop feelings about you. Strong ones act as moods for any section:
+#   .mood.smitten  .mood.inlove  .mood.devoted  .mood.admiring  .mood.envious  .mood.resentful  .mood.hates
+# ======================================================================
+
+[emote.hug.react.mood.smitten]
+blushes and hugs you back.
+freezes, then hugs you back a little too long.
+
+[emote.hug.react.mood.inlove]
+melts into the hug.
+holds on a moment longer than they need to.
+
+[emote.hug.react.mood.resentful]
+pushes you away.
+stiffens and steps back.
+
+[emote.hug.react.mood.hates]
+shoves you off.
+
+[emote.wave.react.mood.smitten]
+waves back, then looks away quickly.
+gives you a shy little wave.
+
+[emote.wave.react.mood.resentful]
+ignores your wave.
+
+[emote.wave.react.mood.hates]
+turns their back on you.
+
+[emote.wink.react.mood.smitten]
+turns bright red.
+giggles and looks at their feet.
+
+[emote.wink.react.mood.inlove]
+winks back with a smile.
+
+[action.toplayer.mood.smitten]
+steals a glance at you, then looks away.
+fixes their hair when you walk by.
+
+[action.toplayer.mood.inlove]
+smiles warmly when they see you.
+watches you with a soft expression.
+
+[action.toplayer.mood.envious]
+eyes your gear enviously.
+sizes you up with a frown.
+
+[action.toplayer.mood.resentful]
+glares at you.
+mutters something as you pass.
+
+[action.toplayer.mood.hates]
+spits on the ground near you.
+turns away pointedly.
+
+[action.toplayer.mood.admiring]
+watches you with obvious admiration.
+
+[react.levelup.player.mood.envious]
+gz... i guess
+must be nice to level that fast
+grats. some of us are still grinding
+
+[react.levelup.player.mood.inlove]
+GZ!! so proud of you {player} <3
+
+[react.levelup.player.mood.resentful]
+yay. another level for {player}
+
+[friend.greet.goodfriend.mood.smitten]
+oh! hi {player}... didn't see you there
+
+[friend.greet.closefriend.mood.inlove]
+{player}! i was hoping you'd come by

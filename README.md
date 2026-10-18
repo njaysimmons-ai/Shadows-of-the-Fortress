@@ -20,8 +20,21 @@ Every sim and NPC builds a long-term friendship with each of your characters, sa
   Sims' in-game opinion of you rises too, so friends are keener to group and invite you to guilds.
 - **AI chat remembers** (sims). Conversations are saved, and the AI knows your friendship level, how long
   you've known each other and their memories of you, so a best friend talks like one.
+- **Thorough memories.** Each character keeps facts about you (your class, your goals, things you
+  told them), plans you made together, shared events and milestones, plus a running summary of your
+  relationship that the AI rewrites as it grows. Memories related to what you're saying are brought
+  up automatically.
+- **Guildmates remember more.** Sims in your guild keep twice the memories, warm up faster, hear
+  guild news ("you and Mira cleared the Brake") and remember what was said in guild chat.
+- **Feelings that change.** Sims develop affection, attraction, respect, trust, envy and resentment
+  toward you from how you actually treat them: what you say (with AI chat), emotes, fights won,
+  wipes, out-leveling them. Over time a sim can grow devoted, admire you, become smitten, fall in
+  love, turn envious, resent you or come to hate you. Each persona feels things differently
+  (a charmer falls fast, a braggart gets envious, a grump holds grudges), feelings fade slowly if
+  nothing feeds them, and they change how the sim greets, reacts and talks to you.
+  `EnableFeelings` and `FeelingsSpeed` in the config control it.
 - `/friends` lists your closest bonds; `/memories Name` (or target someone and type `/memories`)
-  shows what they remember.
+  shows what they remember and how they feel about you.
 
 ## Talk to anyone (AI chat)
 
@@ -126,7 +139,7 @@ All of it lives in `life.txt`, with persona-, mood- and relationship-specific va
 
 Erenshor builds every generated sim from one blank template, so they all draw from the same
 phrases and type the same way, and their small-talk shouts come from one pool per zone.
-This mod gives each generated sim one of 12 personas:
+This mod gives each generated sim one of 22 personas:
 
 | Persona | Sounds like |
 |---|---|
@@ -142,6 +155,16 @@ This mod gives each generated sim one of 12 personas:
 | lorehound | Brax, Sivakaya, the Wisp, Astra, Rockshade Hold |
 | lootgoblin | "II!! mine mine mine" |
 | terse | "k", "omw", "gz" |
+| charmer | "hi cutie", "for you? always ;)" |
+| mentor | tips for newer players, "proud of you" |
+| drama | "you will NOT believe what just happened" |
+| conspiracy | "nobody asks why the vendors never sleep." |
+| pirate | "ahoy matey, join me crew" |
+| shy | "um... could i join you? it's okay if not" |
+| braggart | "that was lag.", "you want carried?" |
+| explorer | hidden waterfalls, shortcuts, "onward" |
+| sleepy | "*yawn* one more level then bed" |
+| superstitious | lucky charms, "someone said easy, we're cursed" |
 
 - **Stable.** The persona comes from the sim's name, so it stays the same every session.
 - **Fits the game's temperament.** Nice sims never become grumps; mean sims never become wholesome.
@@ -169,6 +192,13 @@ they are, or pin a specific sim with `[sim.Name]` and `@persona=grump`.
 - **Hostile and busy NPCs** get varied replies instead of the same `...` and `I'm busy right now...`.
 
 All the writing lives in one plain-text file you can edit and reload in game with **Ctrl+F8**.
+
+## /find
+
+`/find Name` makes a pale mist drift along the walking path from you to someone in the current zone,
+and it keeps following them if they move. It works for NPCs and sims by name, or roles and places
+(`/find vendor`, `/find banker`, `/find exit`). `/find` on its own lists who's here (or follows
+your target), and `/find stop` dismisses the mist. It fades when you arrive or leave the zone.
 
 ## Bald hairstyle
 

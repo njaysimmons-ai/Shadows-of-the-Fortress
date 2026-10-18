@@ -23,6 +23,7 @@ TO UNINSTALL
 IN GAME
   /emotes     list emotes (/wave, /bow, /cheer, /hug, /dance, ...)
   /friends    your closest friendships      /memories Name   what someone remembers about you
+  /find Name  a mist trail leads you to someone in this zone (/find lists who's here, /find stop)
   /ai         AI chat status. Target a sim (or stand next to one) and type to talk.
   /ai test    check the AI is working
   /p message  talk to your group      /w Name message   whisper a sim

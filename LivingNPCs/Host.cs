@@ -28,6 +28,7 @@ namespace LivingNPCs
             root.AddComponent<AmbientChatter>();
             root.AddComponent<SimLife>();
             root.AddComponent<AIChat>();
+            root.AddComponent<MistTrail>();
             if (starts == 1) Plugin.Log.LogInfo("Living NPCs: update loop started.");
             else Plugin.Log.LogWarning("Living NPCs: the update loop was destroyed by the game and has been restarted (" + starts + " starts).");
         }

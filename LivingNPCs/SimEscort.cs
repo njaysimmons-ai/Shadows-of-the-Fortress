@@ -124,7 +124,7 @@ namespace LivingNPCs
 
         private static string Simplify(string s) => Regex.Replace((s ?? "").ToLowerInvariant(), "[^a-z0-9 ]", "").Trim();
 
-        private static bool FindPlace(string place, out Vector3 where, out string name)
+        internal static bool FindPlace(string place, out Vector3 where, out string name)
         {
             bool ok = FindPlaceCore(place, out Vector3 w, out string n);
             where = w;
@@ -208,7 +208,7 @@ namespace LivingNPCs
         /// The closest walkable point to a target. NPCs often stand behind counters or on platforms, so search
         /// outward instead of giving up (the game's own helper only looks 2 metres away).
         /// </summary>
-        private static Vector3 Reachable(Vector3 target)
+        internal static Vector3 Reachable(Vector3 target)
         {
             foreach (float radius in new[] { 2f, 4f, 8f, 15f })
             {

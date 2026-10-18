@@ -22,7 +22,7 @@ namespace LivingNPCs
         // Session-only fallback when friendships are off; otherwise conversations are saved with the friendship.
         private static readonly Dictionary<string, List<Ollama.Message>> History = new Dictionary<string, List<Ollama.Message>>();
 
-        private class Pending { public string Name; public SimPlayer Sim; public int Exchanges; public float LastAt; }
+        private class Pending { public string Name; public SimPlayer Sim; public int Exchanges; public int Words; public float LastAt; }
         private static readonly Dictionary<string, Pending> ToSummarize = new Dictionary<string, Pending>();
         private float nextSummaryCheck;
         private static readonly Queue<Action> Waiting = new Queue<Action>();
@@ -252,7 +252,7 @@ namespace LivingNPCs
             Plugin.Bonds.UseCharacter(WorldContext.PlayerName);
             string key = Friendships.Sim(who);
             bool remember = FriendshipEvents.On;
-            string friendship = remember ? FriendshipText(key, who) : "";
+            string friendship = remember ? FriendshipText(key, who, playerText) : "";
             string system = SimPrompt(who, sim, channel, playerText).Replace("{friendship}", friendship);
             List<Ollama.Message> history;
             if (remember)
@@ -267,7 +267,8 @@ namespace LivingNPCs
             }
             string heard = WorldContext.PlayerName + (channel == Channel.Party ? " (to the group): " : channel == Channel.Whisper ? " (whispering to you): " : ": ") + playerText;
             var messages = new List<Ollama.Message> { new Ollama.Message("system", system) };
-            messages.AddRange(history);
+            // The last dozen messages verbatim; older ones live on in memories and the summary.
+            messages.AddRange(history.Count > 12 ? history.GetRange(history.Count - 12, 12) : history);
             messages.Add(new Ollama.Message("user", heard));
 
             float asked = Time.time;
@@ -300,6 +301,7 @@ namespace LivingNPCs
                     friends.Add(key, 1f);
                     if (!ToSummarize.TryGetValue(key, out Pending p)) ToSummarize[key] = p = new Pending { Name = who, Sim = sim };
                     p.Exchanges++;
+                    p.Words += playerText.Split(' ').Length;
                     p.LastAt = Time.time;
                 }
                 else
@@ -356,9 +358,32 @@ namespace LivingNPCs
 
         // ================================================================ long-term memory
 
+        private const string DefaultMemoryPrompt =
+            "You help {name}, a character in the game Erenshor, remember things about a player named {player}. " +
+            "Read the conversation between {player} and {name}. List up to 3 things worth remembering long-term, one per line, each starting with a label: " +
+            "FACT: something about {player} (their likes, goals, gear they want, how they play, things about their life they shared). " +
+            "PLAN: something you two agreed or intend to do (with when or where if said). " +
+            "EVENT: something notable that happened or was decided. " +
+            "Write each as {name} would say it to {player}, starting with 'you' or 'we', lowercase, under 18 words, no period. " +
+            "Example lines: FACT: you love playing healers / PLAN: we're running Rockshade together this weekend / EVENT: you told me about your guild's first raid. " +
+            "Skip small talk. " +
+            "Then, if the conversation changed how {name} feels about {player}, add up to 2 lines like FEEL: attraction +2 or FEEL: resentment +1 " +
+            "(feelings: affection, attraction, respect, trust, envy, resentment; change from -3 to +3). Flirting raises attraction, kindness affection, " +
+            "rudeness or mockery resentment, bragging can raise envy, help and honesty trust, skill and achievements respect. " +
+            "If nothing is worth remembering and no feelings changed, reply with exactly: NONE";
+
+        private static readonly Regex FeelLine = new Regex(@"^\s*[-*\d.)]*\s*FEEL\s*[:\-]\s*(affection|attraction|respect|trust|envy|resentment)\s*([+\-]?\s*\d+(?:\.\d+)?)", RegexOptions.IgnoreCase);
+
+        private const string DefaultSummaryPrompt =
+            "You keep {name}'s private notes about a player named {player} in the game Erenshor. " +
+            "Rewrite the notes so they include the important new memories below, in under 90 words, written to {player} as 'you ...'. " +
+            "Keep lasting facts, open plans, and how {name}'s feelings about {player} have changed over time; drop trivia and anything outdated. Reply with only the notes.";
+
+        private static readonly Regex MemoryLine = new Regex(@"^\s*[-*\d.)]*\s*(FACT|PLAN|EVENT)\s*[:\-]\s*(.+)$", RegexOptions.IgnoreCase);
+
         /// <summary>
-        /// Once a conversation has gone quiet, asks the model what the character should remember
-        /// from it, and keeps that as a memory of you.
+        /// Once a conversation goes quiet (or runs long), asks the model what's worth remembering and files it
+        /// as facts, plans and events; every few new memories it also refreshes the character's summary note.
         /// </summary>
         private static void SummarizeIdleConversations()
         {
@@ -366,10 +391,12 @@ namespace LivingNPCs
             foreach (var pair in ToSummarize)
             {
                 Pending p = pair.Value;
-                if (Time.time - p.LastAt < 60f) continue;
+                bool quiet = Time.time - p.LastAt >= 45f;
+                if (!quiet && p.Exchanges < 6) continue;
                 string key = pair.Key;
                 ToSummarize.Remove(key);
-                if (p.Exchanges < 2) return;
+                // A single short "hi" isn't worth a memory, but one real message is.
+                if (p.Exchanges < 2 && p.Words < 6) return;
 
                 List<Ollama.Message> convo = Plugin.FriendsNow().Get(key).Conversation;
                 var transcript = new StringBuilder();
@@ -380,47 +407,131 @@ namespace LivingNPCs
                 }
                 var tokens = BaseTokens();
                 tokens["name"] = p.Name;
-                tokens["transcript"] = transcript.ToString();
+                string prompt = Plugin.Ai.Has("ai.memory.v2") ? Section("ai.memory.v2") : DefaultMemoryPrompt;
                 var messages = new List<Ollama.Message>
                 {
-                    new Ollama.Message("system", Fill(Section("ai.memory"), tokens)),
+                    new Ollama.Message("system", Fill(prompt, tokens)),
                     new Ollama.Message("user", transcript.ToString()),
                 };
-                Ollama.Chat(messages, 50, summary =>
+                Ollama.Chat(messages, 120, result =>
                 {
-                    summary = Clean(summary, p.Name, true);
-                    if (string.IsNullOrEmpty(summary) || summary.ToUpperInvariant().StartsWith("NONE")) return;
-                    summary = summary.TrimEnd('.', '!');
-                    if (summary.Length > 0) summary = char.ToLowerInvariant(summary[0]) + summary.Substring(1);
-                    Plugin.FriendsNow().Remember(key, summary);
-                    Plugin.Log.LogInfo(p.Name + " will remember: " + summary);
+                    if (string.IsNullOrWhiteSpace(result) || result.Trim().ToUpperInvariant().StartsWith("NONE")) return;
+                    Friendships friends = Plugin.FriendsNow();
+                    int saved = 0;
+                    int feelings = 0;
+                    foreach (string raw in result.Split('\n'))
+                    {
+                        Match feel = FeelLine.Match(raw);
+                        if (feel.Success && feelings < 2 && key.StartsWith("sim:") &&
+                            float.TryParse(feel.Groups[2].Value.Replace(" ", ""), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float delta))
+                        {
+                            Feelings.Shift(p.Name, feel.Groups[1].Value.ToLowerInvariant(), Mathf.Clamp(delta, -3f, 3f) * 0.5f);
+                            feelings++;
+                            continue;
+                        }
+                        Match m = MemoryLine.Match(raw);
+                        if (!m.Success || saved >= 3) continue;
+                        string text = m.Groups[2].Value.Trim().Trim('"').TrimEnd('.', '!');
+                        if (text.Length < 4 || text.ToUpperInvariant().StartsWith("NONE")) continue;
+                        text = char.ToLowerInvariant(text[0]) + text.Substring(1);
+                        string kind = m.Groups[1].Value.ToLowerInvariant();
+                        friends.Remember(key, text, kind);
+                        if (kind != "fact" && FriendshipEvents.IsGuildmate(p.Name)) FriendshipEvents.GuildNews(p.Name, text);
+                        DebugNote(p.Name + " will remember (" + kind + "): " + text);
+                        Plugin.Log.LogInfo(p.Name + " will remember (" + kind + "): " + text);
+                        saved++;
+                    }
+                    if (friends.Get(key).SinceSummary >= 5) RefreshSummary(key, p.Name);
                 });
                 return;
             }
         }
 
-        private static string FriendshipText(string key, string who)
+        /// <summary>Folds recent memories into the character's short running note about you.</summary>
+        private static void RefreshSummary(string key, string name)
+        {
+            Friendship f = Plugin.FriendsNow().Get(key);
+            var recent = new StringBuilder();
+            int take = Math.Min(f.Memories.Count, Math.Max(f.SinceSummary, 5) + 5);
+            for (int i = f.Memories.Count - take; i < f.Memories.Count; i++)
+            {
+                if (f.Memories[i].Kind != "chat") recent.Append("- ").Append(f.Memories[i].Kind).Append(": ").Append(f.Memories[i].Text).Append('\n');
+            }
+            var tokens = BaseTokens();
+            tokens["name"] = name;
+            string prompt = Plugin.Ai.Has("ai.summary") ? Section("ai.summary") : DefaultSummaryPrompt;
+            var messages = new List<Ollama.Message>
+            {
+                new Ollama.Message("system", Fill(prompt, tokens)),
+                new Ollama.Message("user", "Current notes: " + (string.IsNullOrEmpty(f.Summary) ? "(none yet)" : f.Summary) + "\nNew memories:\n" + recent),
+            };
+            Ollama.Chat(messages, 160, summary =>
+            {
+                if (string.IsNullOrWhiteSpace(summary)) return;
+                summary = summary.Trim().Trim('"');
+                if (summary.Length > 700) summary = summary.Substring(0, 700);
+                Friendship current = Plugin.FriendsNow().Get(key);
+                current.Summary = summary;
+                current.SinceSummary = 0;
+                DebugNote(name + "'s notes on you: " + summary);
+            });
+        }
+
+        private static string FriendshipText(string key, string who, string playerText)
         {
             Friendships friends = Plugin.FriendsNow();
-            if (!friends.Knows(key)) return "You have never met " + WorldContext.PlayerName + " before.";
+            var sb = new StringBuilder();
+            bool guildmate = FriendshipEvents.IsGuildmate(who);
+            if (guildmate)
+            {
+                string guild = FriendshipEvents.GuildName();
+                sb.Append("You and ").Append(WorldContext.PlayerName).Append(" are guildmates in ")
+                  .Append(string.IsNullOrEmpty(guild) ? "the same guild" : "the guild " + guild)
+                  .Append(". Guildmates look out for each other: be loyal, familiar and in on the guild's jokes. ");
+            }
+            if (!friends.Knows(key)) return sb + "You have never met " + WorldContext.PlayerName + " before.";
+
             Friendship f = friends.Get(key);
             int tier = Friendships.TierOf(f.Points);
-            var sb = new StringBuilder();
             sb.Append("Your friendship with ").Append(WorldContext.PlayerName).Append(": ")
               .Append(tier == 0 ? "barely know each other" : Friendships.TierNames[tier]).Append(". ");
             if (f.Points < 0) sb.Append("You have bad feelings about them. ");
             sb.Append("You first met ").Append(Friendships.Ago(f.FirstMet)).Append(" and last spoke ").Append(Friendships.Ago(f.LastSeen)).Append(". ");
-            if (f.Memories.Count > 0)
+            if (!string.IsNullOrEmpty(f.Summary)) sb.Append("Your notes on them: ").Append(f.Summary).Append(" ");
+            string feel = Plugin.EnableFeelings.Value ? Feelings.Describe(f) : "";
+            if (feel.Length > 0)
             {
-                sb.Append("Things you remember about them: ");
-                int from = Math.Max(0, f.Memories.Count - 12);
-                for (int i = from; i < f.Memories.Count; i++)
-                {
-                    sb.Append(f.Memories[i].Value).Append(" (").Append(Friendships.Ago(f.Memories[i].Key)).Append(")");
-                    sb.Append(i < f.Memories.Count - 1 ? "; " : ". ");
-                }
+                sb.Append("How you feel about them: ").Append(feel).Append(". Let these feelings colour how you talk to them, ")
+                  .Append("in your own personality and without announcing them: keep any romance sweet and PG-13, and let dislike show as coldness or snark, never cruelty. ");
             }
-            sb.Append(tier >= 3 ? "Be warm and familiar, like an old friend; bring up shared memories when it fits."
+
+            void List(string label, IEnumerable<MemoryItem> items)
+            {
+                var parts = new List<string>();
+                foreach (MemoryItem m in items) parts.Add(m.Text + " (" + Friendships.Ago(m.When) + ")");
+                if (parts.Count > 0) sb.Append(label).Append(": ").Append(string.Join("; ", parts)).Append(". ");
+            }
+            List<MemoryItem> Last(string kind, int n)
+            {
+                var all = f.Memories.FindAll(m => m.Kind == kind);
+                return all.Count > n ? all.GetRange(all.Count - n, n) : all;
+            }
+            List("What you know about them", Last("fact", 12));
+            List("Plans you made together (follow up on these naturally, e.g. ask how it went)", Last("plan", 6));
+            var relevant = Friendships.Relevant(f, playerText, 4).FindAll(m => m.Kind == "event" || m.Kind == "milestone");
+            List("Memories this brings to mind", relevant);
+            List("Recent things you did together", Last("event", 5).FindAll(m => !relevant.Contains(m)));
+            List("Milestones", Last("milestone", 3));
+
+            if (guildmate && friends.Knows(FriendshipEvents.GuildKey))
+            {
+                Friendship g = friends.Get(FriendshipEvents.GuildKey);
+                var news = g.Memories.FindAll(m => m.Kind == "event");
+                var chat = g.Memories.FindAll(m => m.Kind == "chat");
+                List("Guild news you've heard about them", news.Count > 6 ? news.GetRange(news.Count - 6, 6) : news);
+                List("Recent guild chat", chat.Count > 5 ? chat.GetRange(chat.Count - 5, 5) : chat);
+            }
+            sb.Append(tier >= 3 || guildmate ? "Be warm and familiar, like an old friend; bring up shared memories when it fits."
                     : tier >= 2 ? "Be friendly; you can mention shared memories now and then."
                     : "You don't know them well yet.");
             return sb.ToString();
@@ -497,7 +608,7 @@ namespace LivingNPCs
                 }
             }
 
-            bool lore = LoreTalk.IsMatch(playerText ?? "") || persona == "lorehound" || persona == "roleplayer";
+            bool lore = LoreTalk.IsMatch(playerText ?? "") || persona == "lorehound" || persona == "roleplayer" || persona == "explorer" || persona == "conspiracy";
             parts.Add(Section(lore ? "ai.world" : "ai.world.short"));
             parts.Add(Section("ai.style"));
 

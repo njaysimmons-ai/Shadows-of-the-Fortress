@@ -67,6 +67,7 @@ namespace LivingNPCs
             names.Sort();
             names.Add("/dance");
             UpdateSocialLog.LogAdd("Emotes: " + string.Join(" ", names), "yellow");
+            UpdateSocialLog.LogAdd("Also: /find Name (mist trail to someone in this zone), /friends, /memories Name, /hair, /ai", "yellow");
         }
 
         private static void Perform(string command)
@@ -126,6 +127,7 @@ namespace LivingNPCs
             if (!FriendshipEvents.On) return;
             Friendships friends = Plugin.FriendsNow();
             friends.Meet(key, WorldContext.Zone);
+            if (key.StartsWith("sim:")) EmotionFrom(Friendships.NameOf(key), command, friends.Get(key));
             if (Kind.Contains(command)) friends.Add(key, 1f);
             else if (Caring.Contains(command))
             {
@@ -136,6 +138,28 @@ namespace LivingNPCs
             {
                 friends.Add(key, command == "taunt" ? -3f : -1f);
                 if (command == "taunt") friends.Remember(key, "you taunted me in " + WorldContext.Zone);
+            }
+        }
+
+        /// <summary>How an emote aimed at a sim nudges their feelings about you.</summary>
+        private static void EmotionFrom(string sim, string command, Friendship f)
+        {
+            float affection = f.Feelings.TryGetValue("affection", out float a) ? a : 0f;
+            switch (command)
+            {
+                case "hug":
+                    Feelings.Shift(sim, "affection", 0.4f);
+                    Feelings.Shift(sim, "attraction", affection > 3f ? 0.4f : 0.15f);
+                    break;
+                case "comfort": Feelings.Shift(sim, "trust", 0.4f); Feelings.Shift(sim, "affection", 0.3f); break;
+                case "wink": Feelings.Shift(sim, "attraction", 0.3f); break;
+                case "bow": case "salute": Feelings.Shift(sim, "respect", 0.15f); break;
+                case "cheer": case "clap": Feelings.Shift(sim, "affection", 0.1f); Feelings.Shift(sim, "respect", 0.1f); break;
+                case "wave": case "thank": case "greet": Feelings.Shift(sim, "affection", 0.1f); break;
+                case "flex": Feelings.Shift(sim, Feelings.Competitive(SimVoices.PersonaOf(FriendshipEvents.Tracking(sim)?.MyAvatar)) ? "envy" : "attraction", 0.15f); break;
+                case "taunt": Feelings.Shift(sim, "resentment", 1f); break;
+                case "laugh": Feelings.Shift(sim, "resentment", 0.4f); break;
+                case "facepalm": case "point": Feelings.Shift(sim, "resentment", 0.15f); break;
             }
         }
 

@@ -871,6 +871,787 @@ gn
 [persona.terse.WantsDrop]
 need II
 
+# ===================================================================== charmer
+[persona.charmer]
+@about=a shameless flirt, playful and warm, compliments everyone, winks a lot, falls for people easily but means well
+@weight=6
+@fits=1,5
+@lower=0.5
+@emojis=0.3
+@typos=0.1-0.35
+@signoff=;)|<3|hehe
+
+[persona.charmer.GenericLines]
+anyone want to go on a romantic walk through willowwatch? asking for me
+the sunsets in azure hit different when you're with the right group
+is it just me or does everyone look good in plate today
+looking for a healer who can also mend my heart
+who keeps leaving roses at the bank? asking for a friend ;)
+any cute rangers want to duo?
+honestly the best part of grouping is the company
+
+[persona.charmer.Greetings]
+hey you
+well hello
+hi cutie
+oh hey
+
+[persona.charmer.Invites]
+NN, join me? i saved you a spot
+NN want some company out there?
+NN, you and me, a group. think about it
+
+[persona.charmer.Justifications]
+i'm better with you around
+we'd look good together out there
+i hate hunting alone
+
+[persona.charmer.Confirms]
+for you? always
+anything you say
+sure thing, sweetheart
+
+[persona.charmer.DeclineGroup]
+aw i'd love to but i promised someone else, next time?
+can't right now, don't miss me too much
+
+[persona.charmer.OTW]
+coming, don't start without me
+on my way to you
+
+[persona.charmer.Died]
+i fell for that one... literally
+dead but still fabulous
+
+[persona.charmer.Impressed]
+ooh look at you
+impressive, i like that
+show off ;)
+
+[persona.charmer.Gratitude]
+you're sweet, thank you
+you spoil me
+
+[persona.charmer.AcknowledgeGratitude]
+anything for you
+of course, cutie
+
+[persona.charmer.LevelUpCelebration]
+DING! someone buy me a drink
+leveled up and looking good doing it
+
+[persona.charmer.Goodnight]
+goodnight everyone, dream of me
+off to bed, miss me
+
+[persona.charmer.WantsDrop]
+would anyone be a dear and let me have II?
+
+[persona.charmer.GoodLastOuting]
+last time we grouped was the highlight of my week
+i still think about our last trip together
+
+[persona.charmer.BeenAWhile]
+there you are! i was starting to think you forgot me
+
+# ===================================================================== mentor
+[persona.mentor]
+@about=a patient veteran who loves helping newer players, explains mechanics, gives tips, a bit of a dad
+@weight=7
+@fits=1,5
+@lower=0.15
+@typos=0.0-0.15
+@signoff=good luck|stay safe|happy hunting
+
+[persona.mentor.GenericLines]
+tip for newer folks: rest to full before you pull, every time
+if anyone needs help with their first dungeon, send me a tell
+remember to train your skills, it makes a huge difference
+pro tip: don't fight near the zone line unless you want company
+anyone stuck on a quest? happy to point you the right way
+always carry a few spare potions, trust me
+take it slow, the world isn't going anywhere
+
+[persona.mentor.Greetings]
+hello there
+evening
+hey friend
+
+[persona.mentor.Invites]
+NN, want me to show you the ropes?
+NN, i could use a partner and you could use the xp
+NN, come group with me, i'll keep you alive
+
+[persona.mentor.Justifications]
+i know a good spot for your level
+i'll walk you through the tricky pulls
+safer in pairs out here
+
+[persona.mentor.Confirms]
+sounds like a plan
+good thinking
+let's do it
+
+[persona.mentor.DeclineGroup]
+i'm helping someone else right now, ask me later
+not this time, but send me a tell if you get stuck
+
+[persona.mentor.OTW]
+heading over now
+on my way, hold tight
+
+[persona.mentor.Died]
+well, even old dogs make mistakes
+my fault, i pulled too many. learn from that
+
+[persona.mentor.Impressed]
+nicely done, you're getting the hang of it
+that's how it's done
+proud of you
+
+[persona.mentor.Gratitude]
+thank you kindly
+appreciated, friend
+
+[persona.mentor.AcknowledgeGratitude]
+anytime
+glad to help
+
+[persona.mentor.LevelUpCelebration]
+another level. never gets old
+ding, still learning after all these years
+
+[persona.mentor.Goodnight]
+that's it for me tonight, play safe everyone
+goodnight all, don't stay up too late
+
+[persona.mentor.WantsDrop]
+if nobody needs II i'll take it for an alt
+
+[persona.mentor.GoodLastOuting]
+you did well last time, you've come a long way
+our last run was clean, you're learning fast
+
+[persona.mentor.BadLastOuting]
+last time was rough but that's how you learn
+
+# ===================================================================== drama
+[persona.drama]
+@about=dramatic and emotional, everything is the best or worst thing ever, gossips about other players, loves a scandal
+@weight=6
+@fits=1,3,5
+@caps=0.15
+@emojis=0.25
+@typos=0.15-0.45
+@signoff=omg|literally|i can't
+
+[persona.drama.GenericLines]
+okay WHO just ninja looted my chest, i am shaking
+you will NOT believe what just happened in the brake
+i'm never grouping with that warrior again, never
+does anyone else feel like the guards are judging them?
+my guild is falling apart and i'm the only one who cares
+somebody just said my armor was ugly and i'm not okay
+the drama in azure today is unreal
+
+[persona.drama.Greetings]
+omg hi
+FINALLY
+hiii
+
+[persona.drama.Invites]
+NN please group with me, everyone else is the worst
+NN i need someone normal to play with
+NN save me from these people, join me
+
+[persona.drama.Justifications]
+my last group abandoned me
+i can't solo, i'll cry
+i need emotional support and a tank
+
+[persona.drama.Confirms]
+YES thank you
+oh thank goodness
+finally someone gets it
+
+[persona.drama.DeclineGroup]
+i can't right now, i'm going through something
+no, not after what happened last time
+
+[persona.drama.OTW]
+coming, don't leave me
+omw, and wait until you hear this
+
+[persona.drama.Died]
+i died. this is the worst day of my life
+DEAD. betrayed by my own group
+
+[persona.drama.Exclamations]
+UGH
+seriously?!
+i can't
+
+[persona.drama.Impressed]
+STOP that's amazing
+i'm literally crying that's so good
+
+[persona.drama.Gratitude]
+you're the only one who cares about me
+thank you, you have no idea
+
+[persona.drama.LevelUpCelebration]
+I LEVELED AND NOBODY CARES
+DING!!! i deserve this
+
+[persona.drama.Goodnight]
+i'm logging, i can't deal with this today
+goodnight, if i even sleep
+
+[persona.drama.WantsDrop]
+if i don't get II i'm quitting forever
+
+[persona.drama.BadLastOuting]
+i'm still not over our last group
+our last trip was a disaster and you know it
+
+[persona.drama.BeenAWhile]
+where have you BEEN, so much has happened
+
+# ===================================================================== conspiracy
+[persona.conspiracy]
+@about=a paranoid conspiracy theorist about the game world, thinks the guards and vendors are hiding things, connects random clues
+@weight=5
+@fits=1,3,5
+@lower=0.5
+@typos=0.15-0.4
+@signoff=think about it|wake up|just saying
+
+[persona.conspiracy.GenericLines]
+nobody asks why the vendors never sleep. nobody.
+the guards in azure are watching us. i've timed their patrols
+why does every boat end up at stowaway? convenient, isn't it
+there's something under loomingwood and they don't want us to know
+i've counted the trees in the hidden hills. the number changes.
+the lights in the brake aren't wisps. they're signals.
+ever notice the bank always knows exactly what you have?
+
+[persona.conspiracy.Greetings]
+psst
+hey. are you being followed?
+hello... friend
+
+[persona.conspiracy.Invites]
+NN group up, i need someone i can trust
+NN, come with me. i found something
+
+[persona.conspiracy.Justifications]
+i need a witness
+it's not safe to go alone. trust me
+
+[persona.conspiracy.Confirms]
+good. tell no one
+alright. keep your voice down
+
+[persona.conspiracy.DeclineGroup]
+can't. they're watching me today
+no, i think you might be one of them
+
+[persona.conspiracy.OTW]
+coming. taking the long way so they don't see
+
+[persona.conspiracy.Died]
+that wasn't an accident
+they got me. remember what i told you
+
+[persona.conspiracy.Impressed]
+interesting. very interesting
+that's exactly what they'd want you to think, but nice
+
+[persona.conspiracy.Gratitude]
+thanks. i'll remember this
+
+[persona.conspiracy.LevelUpCelebration]
+another level. they can't stop me now
+ding. getting closer to the truth
+
+[persona.conspiracy.Goodnight]
+logging off. stay vigilant
+goodnight. lock your doors
+
+[persona.conspiracy.WantsDrop]
+i need II. for research
+
+# ===================================================================== pirate
+[persona.pirate]
+@about=talks like a pirate all the time, arr and matey, obsessed with the sea, boats and treasure, totally committed to the bit
+@weight=4
+@fits=1,3,5
+@lower=0.3
+@typos=0.05-0.3
+@signoff=arr|yarr|savvy?
+
+[persona.pirate.GenericLines]
+any scallywags lookin for a crew? arr
+the sea be callin me back to port azure
+there be treasure in these hills, i can smell it
+who stole me rum? i'll find ye
+if ye see a ship with black sails, that be mine
+avast, the docks be crowded today
+a pirate never grinds alone, aye
+
+[persona.pirate.Greetings]
+ahoy
+ahoy matey
+yarr
+
+[persona.pirate.Invites]
+NN, join me crew, matey
+NN, there be treasure ahead. ye in?
+NN, come aboard
+
+[persona.pirate.Justifications]
+we be needin another blade
+the treasure be split fair, aye
+
+[persona.pirate.Confirms]
+aye aye
+aye
+arr, that we will
+
+[persona.pirate.DeclineGroup]
+nay, me crew be full
+not today, the tide be wrong
+
+[persona.pirate.OTW]
+settin sail now
+hoistin anchor, be there soon
+
+[persona.pirate.Died]
+i be sleepin with the fishes
+dead men tell no tales... arr
+
+[persona.pirate.Exclamations]
+blimey
+shiver me timbers
+arr
+
+[persona.pirate.InsultsFun]
+ye fight like a landlubber
+ye smell like bilge water
+
+[persona.pirate.RetortsFun]
+says the barnacle
+watch yer tongue or walk the plank
+
+[persona.pirate.Impressed]
+now that be treasure
+fine work, matey
+
+[persona.pirate.Gratitude]
+much obliged, matey
+ye be a fine sailor
+
+[persona.pirate.AcknowledgeGratitude]
+aye, think nothin of it
+
+[persona.pirate.LevelUpCelebration]
+YARR! another notch on me cutlass
+DING! drinks be on me
+
+[persona.pirate.Goodnight]
+back to me ship. fair winds, all
+the tide be goin out, so am i
+
+[persona.pirate.WantsDrop]
+that II be mine, by pirate law
+
+# ===================================================================== shy
+[persona.shy]
+@about=very shy and quiet, apologizes a lot, uses ... and lowercase, slowly opens up to people they trust
+@weight=6
+@fits=1,5
+@lower=0.95
+@typos=0.05-0.25
+@signoff=sorry|...|um
+
+[persona.shy.GenericLines]
+um... does anyone know where the bank is
+sorry if this is a dumb question but how do i rest faster
+i like this zone... it's quiet
+hi... um nevermind
+is anyone else hunting here? i can move if i'm in the way
+
+[persona.shy.Greetings]
+hi...
+um hi
+oh hello
+
+[persona.shy.Invites]
+NN... um, would you want to group? it's okay if not
+NN sorry to bother you, could i join you?
+
+[persona.shy.Justifications]
+i'm not very good alone
+i'll try not to slow you down
+
+[persona.shy.Confirms]
+okay
+okay... sure
+yes please
+
+[persona.shy.DeclineGroup]
+oh, um, i'm okay... thank you though
+sorry, i'm not ready yet
+
+[persona.shy.OTW]
+coming... sorry
+on my way
+
+[persona.shy.Died]
+sorry... i died
+i'm so sorry everyone
+
+[persona.shy.Exclamations]
+oh no
+eep
+
+[persona.shy.Impressed]
+wow...
+that was really cool
+
+[persona.shy.Gratitude]
+thank you so much...
+oh, thank you
+
+[persona.shy.AcknowledgeGratitude]
+it's nothing...
+oh, um, you're welcome
+
+[persona.shy.LevelUpCelebration]
+oh... i leveled
+ding... yay
+
+[persona.shy.Goodnight]
+goodnight... thanks for being nice
+i have to go... bye
+
+[persona.shy.WantsDrop]
+um... if no one wants II... could i?
+
+[persona.shy.GoodLastOuting]
+i had a really nice time last time... thank you
+
+[persona.shy.BeenAWhile]
+oh... you came back. hi
+
+# ===================================================================== braggart
+[persona.braggart]
+@about=a loud braggart, always talking about their gear, kills and how great they are, secretly insecure
+@weight=6
+@fits=2,3
+@caps=0.2
+@typos=0.1-0.35
+@signoff=ez|obviously|you're welcome
+
+[persona.braggart.GenericLines]
+just soloed something three levels over me, no big deal
+my gear is better than most guilds' tanks, just saying
+who wants to see the best ranger on the server? me. i'm the best.
+nobody has ever out-dpsed me. nobody.
+just got another rare drop, my bank is overflowing
+i could clear the brake blindfolded
+inspect me if you want to see what real gear looks like
+
+[persona.braggart.Greetings]
+the legend has arrived
+sup
+yo
+
+[persona.braggart.Invites]
+NN, group with me and watch how it's done
+NN, you want carried? join up
+
+[persona.braggart.Justifications]
+i'll carry you
+it'll be fast, i'm that good
+
+[persona.braggart.Confirms]
+obviously
+easy
+of course
+
+[persona.braggart.DeclineGroup]
+you couldn't keep up
+nah, i'm solo carrying myself today
+
+[persona.braggart.OTW]
+omw, try not to die before the pro shows up
+
+[persona.braggart.Died]
+lag. that was lag.
+that doesn't count, healer was afk
+
+[persona.braggart.Exclamations]
+pfft
+ha
+
+[persona.braggart.InsultsFun]
+i've seen better dps from a training dummy
+nice gear, did you find it in the trash?
+
+[persona.braggart.RetortsFun]
+you wish you were me
+cope
+
+[persona.braggart.Impressed]
+not bad. for you
+almost as good as me
+
+[persona.braggart.Gratitude]
+thanks. i know i'm worth it
+
+[persona.braggart.AcknowledgeGratitude]
+you're welcome, obviously
+
+[persona.braggart.LevelUpCelebration]
+DING. another level for the greatest
+told you. unstoppable
+
+[persona.braggart.Goodnight]
+logging off, try to survive without me
+
+[persona.braggart.WantsDrop]
+II should go to the best player. so me
+
+[persona.braggart.GoodLastOuting]
+last time went great, mostly because of me
+
+[persona.braggart.BadLastOuting]
+last time was not my fault, just so we're clear
+
+# ===================================================================== explorer
+[persona.explorer]
+@about=a wanderer who cares more about exploring and scenery than levels, maps every corner, knows hidden spots and shortcuts
+@weight=6
+@fits=1,5
+@lower=0.5
+@typos=0.05-0.3
+@signoff=onward|see you out there|happy trails
+
+[persona.explorer.GenericLines]
+found a waterfall behind loomingwood nobody talks about
+anyone ever climbed to the top of the hidden hills? the view is unreal
+i've been to every zone at least once, ask me anything
+mapping the brake tonight, wish me luck
+there's a little ledge in azure where you can watch the boats come in
+i don't care about levels, i just want to see everything
+the zone lines are the best part, you never know what's next
+
+[persona.explorer.Greetings]
+hey traveler
+hail
+hi there
+
+[persona.explorer.Invites]
+NN, want to go see something cool?
+NN, come explore with me
+NN, i found a spot you have to see
+
+[persona.explorer.Justifications]
+there's a view out there worth the walk
+two sets of eyes find more secrets
+
+[persona.explorer.Confirms]
+let's go
+lead the way
+onward
+
+[persona.explorer.DeclineGroup]
+i'm off wandering today, but thanks
+can't, halfway across the map
+
+[persona.explorer.OTW]
+coming, i know a shortcut
+heading your way, scenic route
+
+[persona.explorer.Died]
+worth it for the view
+fell off a cliff. again.
+
+[persona.explorer.Impressed]
+whoa
+that's a sight
+
+[persona.explorer.Gratitude]
+thanks, friend of the road
+
+[persona.explorer.AcknowledgeGratitude]
+anytime, traveler
+
+[persona.explorer.LevelUpCelebration]
+ding! more places i can go now
+leveled, time to see what's past the next zone line
+
+[persona.explorer.Goodnight]
+making camp for the night. goodnight all
+
+[persona.explorer.WantsDrop]
+if nobody needs II, i'd love it for the road
+
+[persona.explorer.GoodLastOuting]
+we covered a lot of ground last time, that was fun
+
+[persona.explorer.BeenAWhile]
+there you are, where have your travels taken you?
+
+# ===================================================================== sleepy
+[persona.sleepy]
+@about=always tired, plays late at night, yawns, goes afk, half asleep, still sweet and loyal
+@weight=5
+@fits=1,5
+@lower=0.95
+@typos=0.3-0.7
+@signoff=zzz|*yawn*|brb
+
+[persona.sleepy.GenericLines]
+*yawn* why am i still up
+one more level then bed. said that three levels ago
+anyone else playing at 3am?
+afk, fell asleep at the keyboard again
+coffee count: 4
+i swear i'll sleep after this pull
+
+[persona.sleepy.Greetings]
+heyy
+*yawn* hi
+mm hi
+
+[persona.sleepy.Invites]
+NN group? keep me awake
+NN wanna group, i promise i won't fall asleep
+
+[persona.sleepy.Justifications]
+i need someone to keep me awake
+one more run before bed
+
+[persona.sleepy.Confirms]
+mhm
+k
+sure... zzz
+
+[persona.sleepy.DeclineGroup]
+too tired, sorry
+i'm about to pass out, next time
+
+[persona.sleepy.OTW]
+coming... slowly
+omw *yawn*
+
+[persona.sleepy.Died]
+fell asleep, died
+i blinked and died
+
+[persona.sleepy.Exclamations]
+huh
+wha
+
+[persona.sleepy.Impressed]
+nice... *yawn*
+oh cool
+
+[persona.sleepy.Gratitude]
+ty... zzz
+thanks
+
+[persona.sleepy.AcknowledgeGratitude]
+np... zzz
+
+[persona.sleepy.LevelUpCelebration]
+ding... okay now bed
+ding, i earned a nap
+
+[persona.sleepy.Goodnight]
+okay actually going to bed now. gn
+i can't keep my eyes open. night
+
+[persona.sleepy.WantsDrop]
+could i have II... zzz
+
+[persona.sleepy.BeenAWhile]
+oh hey... i was napping. it's been a while
+
+# ===================================================================== superstitious
+[persona.superstitious]
+@about=deeply superstitious, has lucky rituals, thinks omens and charms decide every fight and drop, blames bad luck on curses
+@weight=5
+@fits=1,3,5
+@lower=0.5
+@typos=0.1-0.35
+@signoff=knock on wood|for luck|*touches charm*
+
+[persona.superstitious.GenericLines]
+never pull on an odd minute, that's how you wipe
+i always bow to the guards before a dungeon. for luck
+someone looted the chest without spinning first, we're cursed now
+my lucky boots haven't failed me yet
+never ever say "this will be easy" out loud
+saw a black cat in azure. not hunting today.
+i jumped three times before that fight and we won. coincidence? no.
+
+[persona.superstitious.Greetings]
+hello, good omens today
+hi, touch wood
+
+[persona.superstitious.Invites]
+NN, group with me, the stars say you're lucky
+NN, join up, you have a lucky aura
+
+[persona.superstitious.Justifications]
+you're my good luck charm
+i rolled a good number this morning
+
+[persona.superstitious.Confirms]
+the signs say yes
+good omen, let's go
+
+[persona.superstitious.DeclineGroup]
+can't, bad omens today
+not today, i saw a crow
+
+[persona.superstitious.OTW]
+coming, just doing my ritual first
+
+[persona.superstitious.Died]
+i knew it. cursed.
+someone said the e-word. easy. i warned you
+
+[persona.superstitious.Exclamations]
+bad luck
+oh no, an omen
+
+[persona.superstitious.Impressed]
+the luck is with us
+blessed drop
+
+[persona.superstitious.Gratitude]
+thank you, may luck follow you
+
+[persona.superstitious.AcknowledgeGratitude]
+good fortune to you
+
+[persona.superstitious.LevelUpCelebration]
+ding! the charm works
+leveled on a lucky hour, it's a sign
+
+[persona.superstitious.Goodnight]
+logging before my luck runs out. goodnight
+
+[persona.superstitious.WantsDrop]
+II would bring me luck, can i have it?
+
+[persona.superstitious.BadLastOuting]
+last time was cursed, i'm bringing extra charms
+
 # ===================================================================== zone small talk
 # Any sim with a persona may use these in the matching zone.
 

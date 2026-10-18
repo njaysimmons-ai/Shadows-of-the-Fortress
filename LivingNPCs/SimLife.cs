@@ -126,7 +126,8 @@ namespace LivingNPCs
 
         internal static string PersonaOf(SimPlayer sim) => SimVoices.PersonaOf(sim);
 
-        internal static string MoodOf(SimPlayer sim) => Bonds.MoodOf(sim.name);
+        /// <summary>A strong feeling about you (smitten, resentful...) wins over their passing mood.</summary>
+        internal static string MoodOf(SimPlayer sim) => Feelings.Mood(sim.name) ?? Bonds.MoodOf(sim.name);
 
         private static string Line(string section, SimPlayer sim, params string[] tokens)
         {
@@ -180,7 +181,11 @@ namespace LivingNPCs
             string key = Friendships.Sim(sim.name);
             friends.Meet(key, WorldContext.Zone);
             friends.Add(key, points);
-            if (memory != null) friends.Remember(key, memory);
+            if (memory != null)
+            {
+                friends.Remember(key, memory);
+                if (FriendshipEvents.IsGuildmate(sim.name)) FriendshipEvents.GuildNews(sim.name, memory);
+            }
         }
 
         internal static int TierWith(SimPlayer sim) =>
@@ -280,6 +285,9 @@ namespace LivingNPCs
             foreach (SimPlayer sim in group)
             {
                 Bonds.ShiftMood(sim.name, -0.4f);
+                string p = PersonaOf(sim);
+                if (p == "grump" || p == "tryhard") Feelings.Shift(sim.name, "resentment", 0.4f);
+                else Feelings.Shift(sim.name, "trust", 0.1f); // survived it together
                 SharedHistory h = Bonds.History(sim.name);
                 h.Wipes++;
                 h.LastWipeZone = WorldContext.Zone;
@@ -295,8 +303,13 @@ namespace LivingNPCs
 
         private void OnPlayerLevel(List<SimPlayer> group)
         {
+            FriendshipEvents.GuildNews(null, "you reached level " + GameData.PlayerStats.Level);
             foreach (SimPlayer sim in group)
             {
+                // Competitive types get jealous when you pull ahead; others are impressed.
+                bool ahead = sim.MyStats != null && GameData.PlayerStats.Level > sim.MyStats.Level;
+                if (ahead && Feelings.Competitive(PersonaOf(sim))) Feelings.Shift(sim.name, "envy", 0.6f);
+                else Feelings.Shift(sim.name, "respect", 0.3f);
                 Bonds.History(sim.name).Levels++;
                 Bonds.ShiftMood(sim.name, 0.2f);
                 Befriend(sim, 3f, "you hit level " + GameData.PlayerStats.Level + " while we were grouped");
@@ -340,6 +353,8 @@ namespace LivingNPCs
                 h.LastZone = here;
                 Bonds.ShiftMood(group[i].name, 0.03f);
                 Befriend(group[i], 0.5f, null);
+                Feelings.Shift(group[i].name, "trust", 0.05f);
+                Feelings.Shift(group[i].name, "respect", 0.03f);
                 for (int j = i + 1; j < group.Count; j++) Bonds.Nudge(group[i].name, group[j].name, 0.01f);
             }
             SimActions.OnFightWon(group);

@@ -13,6 +13,55 @@ namespace LivingNPCs
 
         internal static bool On => Plugin.EnableFriendships.Value;
 
+        // ---------------------------------------------------------------- guilds
+
+        public static string PlayerGuild => GameData.PlayerControl != null ? GameData.PlayerControl.MyGuild : null;
+
+        public static bool IsGuildmate(string simName)
+        {
+            string guild = PlayerGuild;
+            if (string.IsNullOrEmpty(guild)) return false;
+            SimPlayerTracking t = Tracking(simName);
+            return t != null && t.GuildID == guild;
+        }
+
+        public static string GuildName()
+        {
+            string guild = PlayerGuild;
+            if (string.IsNullOrEmpty(guild)) return null;
+            try { return GameData.GuildManager?.GetGuildDataByID(guild)?.GuildName; }
+            catch { return null; }
+        }
+
+        /// <summary>The guild's shared memory of you: news guildmates pass around.</summary>
+        public static string GuildKey => "guild:" + PlayerGuild;
+
+        /// <summary>
+        /// Records something about you as guild gossip, retold from a guildmate's point of view:
+        /// "we wiped together in Rottenfoot" from Kessa becomes "you and Kessa wiped together in Rottenfoot".
+        /// </summary>
+        public static void GuildNews(string simName, string memory)
+        {
+            if (!On || string.IsNullOrEmpty(PlayerGuild) || string.IsNullOrEmpty(memory)) return;
+            string news = memory.Trim();
+            if (simName != null)
+            {
+                news = System.Text.RegularExpressions.Regex.Replace(news, @"^we\b", "you and " + simName);
+                news = System.Text.RegularExpressions.Regex.Replace(news, @"^i\b", simName);
+                news = System.Text.RegularExpressions.Regex.Replace(news, @"\bme\b", simName);
+                news = System.Text.RegularExpressions.Regex.Replace(news, @"\bmy\b", simName + "'s");
+            }
+            Plugin.FriendsNow().Remember(GuildKey, news, "event");
+        }
+
+        public static void GuildChatSaid(string text)
+        {
+            if (!On || string.IsNullOrEmpty(PlayerGuild) || string.IsNullOrWhiteSpace(text)) return;
+            string said = text.Trim();
+            if (said.Length > 160) said = said.Substring(0, 160);
+            Plugin.FriendsNow().Remember(GuildKey, "you said in guild chat: \"" + said + "\"", "chat");
+        }
+
         internal static SimPlayerTracking Tracking(string simName) =>
             GameData.SimMngr?.Sims?.Find(s => string.Equals(s.SimName, simName, StringComparison.OrdinalIgnoreCase));
 
@@ -86,13 +135,32 @@ namespace LivingNPCs
             Friendships friends = Plugin.FriendsNow();
             if (!friends.Knows(key)) return null;
             Friendship f = friends.Get(key);
-            if (f.Memories.Count == 0) return null;
+            // Only things you did together read well after "remember when".
+            var shared = f.Memories.FindAll(m => m.Kind == "event" || m.Kind == "milestone");
+            if (shared.Count == 0) return null;
             // Recent memories come up more often than old ones.
-            int count = f.Memories.Count;
+            int count = shared.Count;
             int index = count - 1 - (int)(Math.Pow(Plugin.Rng.NextDouble(), 2) * count);
-            string memory = f.Memories[Math.Max(0, index)].Value;
+            string memory = shared[Math.Max(0, index)].Text;
             string line = Lines.Pick("friend.recall", SimLife.PersonaOf(sim));
             return Lines.Fill(line, new Dictionary<string, string> { ["memory"] = memory });
+        }
+    }
+
+    /// <summary>Guild chat you type becomes something your guildmates remember.</summary>
+    [HarmonyPatch(typeof(GuildManager), nameof(GuildManager.ParseGuildChatInput))]
+    internal static class GuildChatMemory
+    {
+        private static void Prefix(string _input, string _fromPlayer)
+        {
+            try
+            {
+                if (_fromPlayer == "Player") FriendshipEvents.GuildChatSaid(_input);
+            }
+            catch (Exception e)
+            {
+                Plugin.Log.LogError("Guild chat memory failed: " + e);
+            }
         }
     }
 
@@ -150,10 +218,20 @@ namespace LivingNPCs
                 return;
             }
             Friendship f = friends.Get(key);
-            UpdateSocialLog.LogAdd(name + " (" + Friendships.TierNames[Friendships.TierOf(f.Points)] + ") remembers:", "#7FD1AE");
-            foreach (var m in f.Memories.Skip(Math.Max(0, f.Memories.Count - 10)))
+            bool guildmate = key.StartsWith("sim:") && FriendshipEvents.IsGuildmate(name);
+            UpdateSocialLog.LogAdd(name + " (" + Friendships.TierNames[Friendships.TierOf(f.Points)] + (guildmate ? ", guildmate" : "") + ") remembers:", "#7FD1AE");
+            if (!string.IsNullOrEmpty(f.Summary)) UpdateSocialLog.LogAdd("  In short: " + f.Summary, "#7FD1AE");
+            string feel = Feelings.Describe(f);
+            if (feel.Length > 0) UpdateSocialLog.LogAdd("  Feelings: " + feel.Replace("them", "you").Replace("they", "you"), "#7FD1AE");
+            foreach (string kind in new[] { "fact", "plan", "milestone", "event" })
             {
-                UpdateSocialLog.LogAdd("  " + Friendships.Ago(m.Key) + ": " + m.Value, "#7FD1AE");
+                var items = f.Memories.FindAll(m => m.Kind == kind);
+                if (items.Count == 0) continue;
+                string label = kind == "fact" ? "About you" : kind == "plan" ? "Plans" : kind == "milestone" ? "Milestones" : "Together";
+                foreach (MemoryItem m in items.Skip(Math.Max(0, items.Count - (kind == "event" ? 6 : 8))))
+                {
+                    UpdateSocialLog.LogAdd("  " + label + " (" + Friendships.Ago(m.When) + "): " + m.Text, "#7FD1AE");
+                }
             }
         }
     }

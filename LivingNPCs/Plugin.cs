@@ -13,7 +13,7 @@ namespace LivingNPCs
     public class Plugin : BaseUnityPlugin
     {
         public const string Guid = "njaysimmons.erenshor.livingnpcs";
-        public const string Version = "0.6.3";
+        public const string Version = "0.7.0";
 
         internal static ManualLogSource Log;
         internal static DialogueBank Bank;
@@ -73,6 +73,8 @@ namespace LivingNPCs
         internal static ConfigEntry<float> FriendshipDailyCap;
         internal static ConfigEntry<bool> FriendshipAffectsGame;
         internal static ConfigEntry<bool> FriendshipAnnounce;
+        internal static ConfigEntry<bool> EnableFeelings;
+        internal static ConfigEntry<float> FeelingsSpeed;
         internal static ConfigEntry<bool> BaldOption;
         internal static ConfigEntry<KeyboardShortcut> ReloadKey;
 
@@ -129,6 +131,8 @@ namespace LivingNPCs
             FriendshipSpeed = Config.Bind("Friendships", "Speed", 1f, "Multiplier on how fast friendships grow (and shrink).");
             FriendshipDailyCap = Config.Bind("Friendships", "DailyGainCap", 12f, "Most friendship one character can gain with you per real day, so bonds build over time.");
             FriendshipAffectsGame = Config.Bind("Friendships", "AffectsSimOpinion", true, "Raise a sim's in-game opinion of you as your friendship grows (the game uses it for grouping and guild invites).");
+            EnableFeelings = Config.Bind("Friendships", "EvolvingFeelings", true, "Sims develop feelings about you over time (affection, attraction, respect, trust, envy, resentment) from what you say and do: they can fall for you, envy you or come to hate you.");
+            FeelingsSpeed = Config.Bind("Friendships", "FeelingsSpeed", 1f, "Multiplier on how fast feelings change.");
             FriendshipAnnounce = Config.Bind("Friendships", "AnnounceNewTiers", true, "Show a message when you and someone become Friends, Good Friends, and so on.");
 
             BaldOption = Config.Bind("Appearance", "BaldHairstyle", true, "Adds a Bald hairstyle at the end of the character creation hair choices, and the /hair command.");
@@ -147,6 +151,8 @@ namespace LivingNPCs
             Friends = new Friendships(Path.Combine(folder, "memory"));
             WorldIndex.Load(Path.Combine(folder, "memory"));
             Friends.TierReached += FriendshipEvents.OnTierReached;
+            Friendships.IsGuildmate = key => key.StartsWith("guild:") ||
+                                             (key.StartsWith("sim:") && FriendshipEvents.IsGuildmate(Friendships.NameOf(key)));
             LoadDialogue();
 
             Instance = this;
