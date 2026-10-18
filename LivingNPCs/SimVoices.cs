@@ -61,6 +61,8 @@ namespace LivingNPCs
         public static string PersonaOf(SimPlayer sim)
         {
             if (sim == null) return null;
+            string picked = WorldIndex.OverrideOf(sim.name);
+            if (picked != null) return picked;
             SimPlayerLanguage language = sim.GetComponent<SimPlayerLanguage>();
             return language != null && Assigned.TryGetValue(language, out Persona p) ? p.Id : null;
         }
@@ -178,7 +180,8 @@ namespace LivingNPCs
 
         private static Persona Choose(string simName, int personalityType, System.Random rng)
         {
-            if (overrides.TryGetValue(simName, out string forced))
+            string forced = WorldIndex.OverrideOf(simName);
+            if (forced != null || overrides.TryGetValue(simName, out forced))
             {
                 Persona match = personas.Find(p => string.Equals(p.Id, forced, StringComparison.OrdinalIgnoreCase));
                 if (match != null) return match;

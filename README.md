@@ -101,6 +101,9 @@ Typing quirks still apply: a lowercase chill sim stays lowercase, a hype sim sta
 - **People:** search by name, job, hobby or place, and filter by age group, gender and personality, to see their level and class, where they are,
   their personality, the real person behind them, your friendship, their feelings and the summary.
   From there you can show their memories, find them with the mist, or clear your recent chat.
+  **Edit** lets you test relationships directly: presets (Best friend, Crush, In love, Rival,
+  Nemesis, Reset), a friendship slider, a slider for each feeling, their personality, and the
+  relationship notes the AI reads. Romantic options are off for sims under 18.
 - **Guiding:** sims walk you there, walk you there with a mist trail, or (in the same zone) just
   conjure the mist. Also the pace, how far you can fall behind before they wait, whether they guide
   across zones, and the mist colour.

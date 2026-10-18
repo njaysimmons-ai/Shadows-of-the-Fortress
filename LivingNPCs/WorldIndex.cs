@@ -17,6 +17,7 @@ namespace LivingNPCs
         private static readonly Dictionary<string, string> NpcZone = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private static readonly HashSet<string> Edges = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private static readonly Dictionary<string, string> Personas = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private static readonly Dictionary<string, string> PersonaOverrides = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private static string path;
         private static bool dirty;
 
@@ -31,6 +32,7 @@ namespace LivingNPCs
                 if (p[0] == "N") NpcZone[p[1]] = p[2];
                 else if (p[0] == "E") Edges.Add(p[1] + ">" + p[2]);
                 else if (p[0] == "P") Personas[p[1]] = p[2];
+                else if (p[0] == "O") PersonaOverrides[p[1]] = p[2];
             }
         }
 
@@ -43,7 +45,20 @@ namespace LivingNPCs
             dirty = true;
         }
 
-        public static string PersonaOf(string sim) => sim != null && Personas.TryGetValue(sim, out string p) ? p : null;
+        public static string PersonaOf(string sim) =>
+            OverrideOf(sim) ?? (sim != null && Personas.TryGetValue(sim, out string p) ? p : null);
+
+        /// <summary>A personality you picked for this sim in the /ai panel, or null.</summary>
+        public static string OverrideOf(string sim) => sim != null && PersonaOverrides.TryGetValue(sim, out string p) ? p : null;
+
+        public static void SetOverride(string sim, string persona)
+        {
+            if (string.IsNullOrEmpty(sim)) return;
+            if (string.IsNullOrEmpty(persona)) PersonaOverrides.Remove(sim);
+            else PersonaOverrides[sim] = persona;
+            dirty = true;
+            Save();
+        }
 
         public static void Save()
         {
@@ -51,6 +66,7 @@ namespace LivingNPCs
             var lines = new List<string>();
             foreach (var pair in NpcZone) lines.Add("N\t" + pair.Key + "\t" + pair.Value);
             foreach (var pair in Personas) lines.Add("P\t" + pair.Key + "\t" + pair.Value);
+            foreach (var pair in PersonaOverrides) lines.Add("O\t" + pair.Key + "\t" + pair.Value);
             foreach (string e in Edges)
             {
                 string[] p = e.Split('>');

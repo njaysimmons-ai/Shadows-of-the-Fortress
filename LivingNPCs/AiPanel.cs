@@ -456,10 +456,107 @@ namespace LivingNPCs
             GUI.enabled = f != null && f.Conversation.Count > 0;
             if (GUILayout.Button("Clear recent chat", normal, GUILayout.Height(26))) AIChat.Forget(name);
             GUI.enabled = true;
-            if (GUILayout.Button("Close", normal, GUILayout.Width(60), GUILayout.Height(26))) chosen = null;
+            if (GUILayout.Button(editing ? "Done editing" : "Edit", editing ? selected : normal, GUILayout.Width(110), GUILayout.Height(26)))
+            {
+                editing = !editing;
+                notes = null;
+            }
+            if (GUILayout.Button("Close", normal, GUILayout.Width(60), GUILayout.Height(26))) { chosen = null; editing = false; }
             GUILayout.EndHorizontal();
+            if (editing) Editor(name, persona, person);
             GUILayout.EndVertical();
             GUILayout.Space(6);
+        }
+
+        private bool editing;
+        private string notes;
+        private static readonly string[] FeelingLabels = { "Affection", "Attraction", "Respect", "Trust", "Envy", "Resentment" };
+
+        /// <summary>Hands-on testing: set a sim's personality, friendship and feelings directly.</summary>
+        private void Editor(string name, string persona, RealLife.Person person)
+        {
+            Friendships friends = Plugin.FriendsNow();
+            string key = Friendships.Sim(name);
+            Friendship f = friends.Get(key);
+            bool minor = person != null && person.Minor;
+            GUILayout.Space(6);
+            GUILayout.Label("Edit " + name, header);
+            GUILayout.Label("Changes save straight away. Feelings still drift slowly with time and with how you treat them.", small);
+
+            GUILayout.Label("<b>Presets</b>", label);
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("Best friend", normal, GUILayout.Height(26))) Preset(f, 320f, 9, 0, 7, 9, 0, 0);
+            GUI.enabled = !minor;
+            if (GUILayout.Button("Crush", normal, GUILayout.Height(26))) Preset(f, 80f, 6, 5, 4, 5, 0, 0);
+            if (GUILayout.Button("In love", normal, GUILayout.Height(26))) Preset(f, 200f, 8, 8, 6, 7, 0, 0);
+            GUI.enabled = true;
+            if (GUILayout.Button("Rival", normal, GUILayout.Height(26))) Preset(f, 40f, 2, 0, 6, 2, 7, 3);
+            if (GUILayout.Button("Nemesis", normal, GUILayout.Height(26))) Preset(f, 0f, 0, 0, 2, 0, 4, 9);
+            if (GUILayout.Button("Reset", normal, GUILayout.Height(26))) Preset(f, 0f, 0, 0, 0, 0, 0, 0);
+            GUILayout.EndHorizontal();
+            if (minor) GUILayout.Label("They're under 18, so attraction, Crush and In love are off.", small);
+
+            GUILayout.Space(4);
+            float max = Friendships.TierPoints[Friendships.TierPoints.Length - 1] * 1.2f;
+            GUILayout.Label("<b>Friendship:</b> " + Friendships.TierNames[Friendships.TierOf(f.Points)] + " (" + (int)f.Points + ")", label);
+            float points = GUILayout.HorizontalSlider(f.Points, 0f, max);
+            if (Mathf.Abs(points - f.Points) > 0.5f) { f.Points = Mathf.Round(points); friends.MarkDirty(); }
+            GUILayout.Space(8);
+
+            for (int i = 0; i < Feelings.Names.Length; i++)
+            {
+                string feeling = Feelings.Names[i];
+                float now = f.Feelings.TryGetValue(feeling, out float v) ? v : 0f;
+                GUILayout.BeginHorizontal();
+                GUILayout.Label(FeelingLabels[i] + ": " + now.ToString("0.0"), label, GUILayout.Width(150));
+                GUI.enabled = !(minor && feeling == "attraction");
+                float next = GUILayout.HorizontalSlider(now, 0f, 10f, GUILayout.MinWidth(200));
+                GUI.enabled = true;
+                GUILayout.EndHorizontal();
+                if (Mathf.Abs(next - now) > 0.05f && !(minor && feeling == "attraction"))
+                {
+                    f.Feelings[feeling] = Mathf.Round(next * 10f) / 10f;
+                    friends.MarkDirty();
+                }
+            }
+            string stance = Feelings.Strongest(f);
+            GUILayout.Label("Right now they'd come across as: " + (stance ?? "neutral"), small);
+
+            GUILayout.Space(8);
+            GUILayout.Label("<b>Personality</b> (typing style and lines fully switch the next time they spawn)", label);
+            var ids = new List<string> { "Default" };
+            ids.AddRange(SimVoices.PersonaIds);
+            string overridden = WorldIndex.OverrideOf(name);
+            int current = overridden == null ? 0 : Math.Max(0, ids.IndexOf(overridden));
+            int picked = GUILayout.SelectionGrid(current, ids.ToArray(), 4, normal);
+            if (picked != current)
+            {
+                WorldIndex.SetOverride(name, picked == 0 ? null : ids[picked]);
+                RealLife.Reset();
+            }
+            if (overridden != null && persona != null) GUILayout.Label(SimVoices.AboutOf(persona), small);
+
+            GUILayout.Space(8);
+            GUILayout.Label("<b>Relationship notes</b> (what they think of your history together; the AI reads this)", label);
+            if (notes == null) notes = f.Summary ?? "";
+            notes = GUILayout.TextArea(notes, 600, GUILayout.MinHeight(60));
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("Save notes", normal, GUILayout.Height(26)))
+            {
+                f.Summary = notes.Trim();
+                friends.MarkDirty();
+                GUIUtility.keyboardControl = 0;
+            }
+            if (GUILayout.Button("Undo", normal, GUILayout.Height(26))) { notes = null; GUIUtility.keyboardControl = 0; }
+            GUILayout.EndHorizontal();
+        }
+
+        private static void Preset(Friendship f, float points, float affection, float attraction, float respect, float trust, float envy, float resentment)
+        {
+            f.Points = points;
+            float[] values = { affection, attraction, respect, trust, envy, resentment };
+            for (int i = 0; i < Feelings.Names.Length; i++) f.Feelings[Feelings.Names[i]] = values[i];
+            Plugin.FriendsNow().MarkDirty();
         }
 
         private int Choice(int current, string[] options)
