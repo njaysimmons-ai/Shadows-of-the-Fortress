@@ -33,6 +33,14 @@ namespace LivingNPCs
             RegexOptions.IgnoreCase);
 
         public static bool Ready { get; private set; }
+
+        /// <summary>/ai debug: shows raw replies and what the mod did with them.</summary>
+        public static bool Debug;
+
+        public static void DebugNote(string text)
+        {
+            if (Debug) TryChat("[AI debug] " + text, "#9AA0A6");
+        }
         private static bool preparing;
         private static int attempts;
         private static float nextRetry = 8f;
@@ -271,7 +279,17 @@ namespace LivingNPCs
                     TryChat("Living NPCs: " + who + " couldn't answer: " + Ollama.LastError + ". Type /ai test to check.", "yellow");
                 }
                 // Pull out any action the sim agreed to before tidying the text (tags can trail off the first line).
+                if (reply != null) DebugNote(who + " raw reply: " + reply.Replace("\n", " "));
                 reply = SimActions.Extract(reply, out string action, out string argument);
+                if ((action == "GUIDE" || action == "MEET") && argument == null)
+                {
+                    argument = SimActions.PlaceFromRequest(playerText);
+                    DebugNote("tag had no destination; using '" + argument + "' from what you asked");
+                }
+                if (action == null && Plugin.AiActions.Value && SimActions.Infer(playerText, reply, out action, out argument))
+                {
+                    DebugNote("no action tag, but " + who + " agreed, so treating it as " + action + (argument != null ? " (" + argument + ")" : ""));
+                }
                 reply = Clean(reply, who, SimLife.PersonaOf(sim) != "roleplayer");
                 if (string.IsNullOrEmpty(reply)) return;
                 string remembered = action == null ? reply : reply + " [" + action + (argument != null ? ":" + argument : "") + "]";
@@ -606,6 +624,11 @@ namespace LivingNPCs
             {
                 AIChat.Test();
             }
+            else if (arg == "debug")
+            {
+                AIChat.Debug = !AIChat.Debug;
+                UpdateSocialLog.LogAdd("Living NPCs AI debug " + (AIChat.Debug ? "ON: raw replies and actions will show in grey. /ai debug again to turn off." : "OFF."), "yellow");
+            }
             else if (arg == "on")
             {
                 Plugin.AiEnabled.Value = true;
@@ -638,7 +661,7 @@ namespace LivingNPCs
                                        (Host.Starts > 1 ? ", restarted " + (Host.Starts - 1) + " times" : ""), looping ? "yellow" : "red");
                 if (!string.IsNullOrEmpty(Ollama.LastError)) UpdateSocialLog.LogAdd("Last problem: " + Ollama.LastError, "yellow");
                 UpdateSocialLog.LogAdd("To talk: target a sim (or stand next to one) and type; /p for your group; /w Name to whisper. NPCs keep their scripted dialogue.", "yellow");
-                UpdateSocialLog.LogAdd("Commands: /ai test, /ai on, /ai off, /ai model NAME", "yellow");
+                UpdateSocialLog.LogAdd("Commands: /ai test, /ai debug, /ai on, /ai off, /ai model NAME", "yellow");
             }
             return false;
         }

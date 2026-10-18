@@ -14,7 +14,10 @@ namespace LivingNPCs
     /// </summary>
     public static class SimActions
     {
-        private static readonly Regex Tag = new Regex(@"\[\s*(JOIN|LEAVE|COME|MEET|GUIDE|FOLLOW|WAIT|STAY|BUFF|HELP|WAVE|DANCE|SIT|CHEER|BOW|LAUGH)\s*(?::\s*([^\]]*))?\]", RegexOptions.IgnoreCase);
+        // Lenient on purpose: models write [GUIDE:bank], [GUIDE: the bank], [Guide to the bank], [GUIDE - bank], (GUIDE:bank)...
+        private static readonly Regex Tag = new Regex(
+            @"[\[(]\s*(JOIN|LEAVE|COME|MEET|GUIDE|LEAD|FOLLOW|WAIT|STAY|BUFF|HELP|WAVE|DANCE|SIT|CHEER|BOW|LAUGH)\b\s*(?:[:=\-]|\bto\b|\bat\b|\bin\b)?\s*(?:to\s+|at\s+|in\s+)?([^\])]*)[\])]",
+            RegexOptions.IgnoreCase);
         private static readonly Regex AnyTag = new Regex(@"\[[^\]]*\]");
 
         private class Meeting
@@ -54,10 +57,53 @@ namespace LivingNPCs
             if (m.Success)
             {
                 action = m.Groups[1].Value.ToUpperInvariant();
-                argument = m.Groups[2].Success ? m.Groups[2].Value.Trim() : null;
+                if (action == "LEAD") action = "GUIDE";
+                argument = m.Groups[2].Success ? m.Groups[2].Value.Trim().Trim('"', '\'', '.') : null;
+                if (string.IsNullOrEmpty(argument)) argument = null;
+                reply = reply.Remove(m.Index, m.Length);
             }
             return AnyTag.Replace(reply, "").Replace("  ", " ").Trim();
         }
+
+        // ---------------------------------------------------------------- reading intent when there's no tag
+
+        private static readonly Regex Agrees = new Regex(
+            @"\b(sure|yes|yeah|yep|yup|ya|ok|okay|k|follow me|this way|come on|let'?s go|lets go|omw|on my way|got it|of course|np|no problem|aye|right this way|gladly|happy to|alright|you got it)\b",
+            RegexOptions.IgnoreCase);
+        private static readonly Regex Refuses = new Regex(@"\b(no|nah|nope|can'?t|cannot|sorry|busy|later|not now|don'?t know|no idea)\b", RegexOptions.IgnoreCase);
+        private static readonly Regex AskGuide = new Regex(
+            @"\b(?:take|show|lead|guide|bring|walk|get)\s+me\s+(?:to|towards|over to|the way to)\s+(?<place>[^?.!,]+)|\bwhere(?:'s|\s+is|\s+are|\s+can\s+i\s+find)\s+(?<place>[^?.!,]+)|\bshow\s+me\s+(?:where\s+)?(?<place>(?:the\s+)?[^?.!,]+?)\s+is\b",
+            RegexOptions.IgnoreCase);
+        private static readonly Regex AskFollow = new Regex(@"\b(follow me|come with me|tag along)\b", RegexOptions.IgnoreCase);
+        private static readonly Regex AskWait = new Regex(@"\b(wait here|stay here|wait for me|stay put|hold on here)\b", RegexOptions.IgnoreCase);
+        private static readonly Regex AskBuff = new Regex(@"\b(buff|buffs)\b", RegexOptions.IgnoreCase);
+        private static readonly Regex AskHelp = new Regex(@"\b(help me (?:with|kill|fight)|help with this|give me a hand)\b", RegexOptions.IgnoreCase);
+
+        /// <summary>The place in a request like "take me to the bank" or "where is Prestigio?", or null.</summary>
+        public static string PlaceFromRequest(string playerText)
+        {
+            Match g = AskGuide.Match(playerText ?? "");
+            return g.Success ? g.Groups["place"].Value.Trim() : null;
+        }
+
+        /// <summary>
+        /// If the sim clearly agreed to what you asked but forgot the tag, work out the action from the two
+        /// messages. Only fires on a plain yes, never on a refusal.
+        /// </summary>
+        public static bool Infer(string playerText, string reply, out string action, out string argument)
+        {
+            action = argument = null;
+            if (string.IsNullOrEmpty(playerText) || string.IsNullOrEmpty(reply)) return false;
+            if (!Agrees.IsMatch(reply) || Refuses.IsMatch(reply)) return false;
+            Match g = AskGuide.Match(playerText);
+            if (g.Success) { action = "GUIDE"; argument = g.Groups["place"].Value.Trim(); }
+            else if (AskFollow.IsMatch(playerText)) action = "FOLLOW";
+            else if (AskWait.IsMatch(playerText)) action = "WAIT";
+            else if (AskBuff.IsMatch(playerText)) action = "BUFF";
+            else if (AskHelp.IsMatch(playerText)) action = "HELP";
+            return action != null;
+        }
+
 
         /// <summary>The zones the AI may name, in their display names, for the prompt.</summary>
         public static string ZoneList()
@@ -103,6 +149,8 @@ namespace LivingNPCs
             if (tracking == null) return;
             sim = sim != null ? sim : tracking.MyAvatar;
             Plugin.Log.LogInfo("Sim action: " + simName + " " + action + (argument != null ? " " + argument : ""));
+            AIChat.DebugNote(simName + " will " + action + (argument != null ? " (" + argument + ")" : "") +
+                             (sim == null ? ", but isn't spawned near you" : tracking.CurScene != WorldContext.Zone ? ", from " + tracking.CurScene : ""));
             try
             {
                 bool here = sim != null && tracking.CurScene == WorldContext.Zone && SimLife.Alive(sim);
@@ -123,11 +171,13 @@ namespace LivingNPCs
                         Leave(sim);
                         break;
                     case "GUIDE":
-                        if (!here) break;
+                        if (!here) { AIChat.DebugNote("can't guide: " + simName + " isn't in your zone"); break; }
                         Routes.RemoveAll(r => string.Equals(r.Sim, sim.name, StringComparison.OrdinalIgnoreCase));
-                        if (SimEscort.Guide(sim, argument)) break;
-                        if (!GuideElsewhere(sim, argument))
+                        if (SimEscort.Guide(sim, argument)) { AIChat.DebugNote("guiding to '" + argument + "' in this zone"); break; }
+                        if (GuideElsewhere(sim, argument)) AIChat.DebugNote("guiding toward '" + argument + "' in another zone");
+                        else
                         {
+                            AIChat.DebugNote("couldn't find '" + argument + "' here or in any zone the mod has seen");
                             string lost = Lines.Pick("action.guide.unknown", SimLife.PersonaOf(sim)) ?? "hm, actually i'm not sure where that is";
                             Scheduler.After(1.5f, () => Speech.Say(sim, lost));
                         }

@@ -64,7 +64,9 @@ connections. So sims can take you to anyone in a zone you've been to, and to any
 
 Sims are told which NPCs and spots are in the zone and which buffs they actually have, so they only
 offer what they can do. They never offer trades. If a fight breaks out mid-errand they fight first,
-then carry on. The AI marks what it agreed to with a hidden tag that the mod strips from chat and carries out
+then carry on. If the AI agrees in words but forgets the tag ("sure, follow me!" to "take me to the bank"), the
+mod works out the action from your request and their yes; it never acts on a refusal.
+The AI marks what it agreed to with a hidden tag that the mod strips from chat and carries out
 with the game's own mechanics. Turn it off with `SimsActOnWhatTheySay` in the settings.
 
 Messages about grouping, invites and trading are left to the game's own sims, so the game's group,
@@ -80,6 +82,9 @@ percentage, or loading it into video memory). `/ai test` sends a test message an
 enter the world the mod also says whether AI chat is on, and if a reply fails it tells you why.
 It retries the connection every minute, so starting Ollama after the game is fine.
 Details are also in `Erenshor/BepInEx/LogOutput.log`.
+
+`/ai debug` shows, in grey, each sim's raw reply (including any hidden action tag) and what the mod
+did with it, which is the quickest way to see why a sim didn't do something.
 
 Still stuck? Double-click **Check AI.bat** in the mod folder (with the game closed). It checks each
 step (Ollama installed, running, model downloaded, a real test reply), starts Ollama or downloads the
