@@ -16,6 +16,7 @@ namespace LivingNPCs
     {
         private static readonly Dictionary<string, string> NpcZone = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private static readonly HashSet<string> Edges = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private static readonly Dictionary<string, string> Personas = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private static string path;
         private static bool dirty;
 
@@ -29,14 +30,27 @@ namespace LivingNPCs
                 if (p.Length < 3) continue;
                 if (p[0] == "N") NpcZone[p[1]] = p[2];
                 else if (p[0] == "E") Edges.Add(p[1] + ">" + p[2]);
+                else if (p[0] == "P") Personas[p[1]] = p[2];
             }
         }
+
+        /// <summary>Remembers each sim's persona once seen, so the /ai panel can show it when they're not around.</summary>
+        public static void NotePersona(string sim, string persona)
+        {
+            if (string.IsNullOrEmpty(sim) || string.IsNullOrEmpty(persona)) return;
+            if (Personas.TryGetValue(sim, out string had) && had == persona) return;
+            Personas[sim] = persona;
+            dirty = true;
+        }
+
+        public static string PersonaOf(string sim) => sim != null && Personas.TryGetValue(sim, out string p) ? p : null;
 
         public static void Save()
         {
             if (!dirty || path == null) return;
             var lines = new List<string>();
             foreach (var pair in NpcZone) lines.Add("N\t" + pair.Key + "\t" + pair.Value);
+            foreach (var pair in Personas) lines.Add("P\t" + pair.Key + "\t" + pair.Value);
             foreach (string e in Edges)
             {
                 string[] p = e.Split('>');

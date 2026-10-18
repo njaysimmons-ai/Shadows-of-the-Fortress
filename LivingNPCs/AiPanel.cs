@@ -159,13 +159,15 @@ namespace LivingNPCs
             if (GUILayout.Button("AI models", tab == 0 ? selected : normal, GUILayout.Height(28))) tab = 0;
             if (GUILayout.Button("Personality", tab == 1 ? selected : normal, GUILayout.Height(28))) tab = 1;
             if (GUILayout.Button("Guiding", tab == 2 ? selected : normal, GUILayout.Height(28))) tab = 2;
+            if (GUILayout.Button("People", tab == 3 ? selected : normal, GUILayout.Height(28))) tab = 3;
             GUILayout.EndHorizontal();
             GUILayout.Space(6);
 
             scroll = GUILayout.BeginScrollView(scroll);
             if (tab == 0) ModelsTab();
             else if (tab == 1) PersonalityTab();
-            else GuidingTab();
+            else if (tab == 2) GuidingTab();
+            else PeopleTab();
             GUILayout.EndScrollView();
 
             GUILayout.Space(4);
@@ -323,6 +325,101 @@ namespace LivingNPCs
             if (GUILayout.Button("Who's here?", normal, GUILayout.Height(26))) MistTrail.List();
             if (GUILayout.Button("Clear the mist", normal, GUILayout.Height(26))) MistTrail.Stop("The mist disperses.");
             GUILayout.EndHorizontal();
+        }
+
+        private string search = "";
+        private string chosen;
+
+        private void PeopleTab()
+        {
+            GUILayout.Label("People", header);
+            GUILayout.Label("Search any sim to see the real person behind them, their personality and how they feel about you.", small);
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Search:", label, GUILayout.Width(56));
+            search = GUILayout.TextField(search ?? "", 40, GUILayout.Height(26));
+            if (GUILayout.Button("Clear", normal, GUILayout.Width(60), GUILayout.Height(26))) { search = ""; GUIUtility.keyboardControl = 0; }
+            GUILayout.EndHorizontal();
+            GUILayout.Space(4);
+
+            if (chosen != null) Card(chosen);
+
+            List<SimPlayerTracking> sims = GameData.SimMngr != null ? GameData.SimMngr.Sims : null;
+            if (sims == null || sims.Count == 0)
+            {
+                GUILayout.Label("No sims loaded yet. Get into the world first.", small);
+                return;
+            }
+            Friendships friends = Plugin.FriendsNow();
+            var points = new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase);
+            foreach (var pair in friends.All) if (pair.Key.StartsWith("sim:")) points[Friendships.NameOf(pair.Key)] = pair.Value.Points;
+
+            string wanted = (search ?? "").Trim();
+            var list = sims.Where(t => t != null && !string.IsNullOrEmpty(t.SimName) &&
+                                      (wanted.Length == 0 || t.SimName.IndexOf(wanted, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                       (PersonaFor(t) ?? "").IndexOf(wanted, StringComparison.OrdinalIgnoreCase) >= 0))
+                .OrderByDescending(t => points.TryGetValue(t.SimName, out float pt) ? pt : -1f)
+                .ThenBy(t => t.SimName).Take(40).ToList();
+            GUILayout.Label(list.Count == 0 ? "Nobody matches." : wanted.Length == 0 ? "People you know best first. Click a name for details." : list.Count + " found:", small);
+            foreach (SimPlayerTracking t in list)
+            {
+                float pt = points.TryGetValue(t.SimName, out float v) ? v : 0f;
+                string persona = PersonaFor(t);
+                string text = "<b>" + t.SimName + "</b>  <color=#9AA0A6>lvl " + t.Level + " " + t.ClassName +
+                              (persona != null ? ", " + persona : "") + (pt > 0f ? ", " + Friendships.TierNames[Friendships.TierOf(pt)] : "") + "</color>";
+                if (GUILayout.Button(text, t.SimName == chosen ? selected : normal, GUILayout.Height(26)))
+                {
+                    chosen = t.SimName == chosen ? null : t.SimName;
+                    scroll = Vector2.zero;
+                }
+            }
+        }
+
+        private static string PersonaFor(SimPlayerTracking t)
+        {
+            string p = t.MyAvatar != null ? SimVoices.PersonaOf(t.MyAvatar) : null;
+            return p ?? WorldIndex.PersonaOf(t.SimName);
+        }
+
+        private void Card(string name)
+        {
+            SimPlayerTracking t = FriendshipEvents.Tracking(name);
+            if (t == null) { chosen = null; return; }
+            string persona = PersonaFor(t);
+            Friendships friends = Plugin.FriendsNow();
+            Friendship f = null;
+            string key = Friendships.Sim(name);
+            foreach (var pair in friends.All) if (string.Equals(pair.Key, key, StringComparison.OrdinalIgnoreCase)) f = pair.Value;
+
+            GUILayout.BeginVertical(GUI.skin.box);
+            GUILayout.Label(name + "  <color=#9AA0A6><size=12>level " + t.Level + " " + t.ClassName +
+                            (string.IsNullOrEmpty(t.CurScene) ? "" : ", in " + GetCommonTerms.GetZoneTerm(t.CurScene)) +
+                            (FriendshipEvents.IsGuildmate(name) ? ", your guildmate" : "") + "</size></color>", header);
+            if (persona != null)
+                GUILayout.Label("<b>Personality:</b> " + persona + ". " + SimVoices.AboutOf(persona), label);
+            else
+                GUILayout.Label("<b>Personality:</b> " + (SimVoices.IsPremade(name) ? "one of the game's hand-made sims, with their own voice." : "not known yet; it shows once you've seen them."), label);
+            GUILayout.Label("<b>The real person:</b> " + RealLife.Of(name, persona).Replace("Outside the game you're a real person: ", ""), label);
+            if (f != null && f.Points > 0f)
+            {
+                GUILayout.Label("<b>Friendship:</b> " + Friendships.TierNames[Friendships.TierOf(f.Points)] + " (" + (int)f.Points + "), met " + Friendships.Ago(f.FirstMet) +
+                                ", " + f.Memories.Count + " memories", label);
+                string feel = Feelings.Describe(f);
+                if (!string.IsNullOrEmpty(feel)) GUILayout.Label("<b>Feelings:</b> " + feel.Replace("them", "you").Replace("they", "you"), label);
+                if (!string.IsNullOrEmpty(f.Summary)) GUILayout.Label("<b>In short:</b> " + f.Summary, label);
+            }
+            else GUILayout.Label("<b>Friendship:</b> you haven't really met yet.", label);
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("Memories in chat", normal, GUILayout.Height(26))) FriendCommands.ShowMemories(name);
+            bool here = t.MyAvatar != null && t.CurScene == WorldContext.Zone;
+            GUI.enabled = here;
+            if (GUILayout.Button("Find with mist", normal, GUILayout.Height(26))) MistTrail.Begin(name);
+            GUI.enabled = f != null && f.Conversation.Count > 0;
+            if (GUILayout.Button("Clear recent chat", normal, GUILayout.Height(26))) AIChat.Forget(name);
+            GUI.enabled = true;
+            if (GUILayout.Button("Close", normal, GUILayout.Width(60), GUILayout.Height(26))) chosen = null;
+            GUILayout.EndHorizontal();
+            GUILayout.EndVertical();
+            GUILayout.Space(6);
         }
 
         private int Choice(int current, string[] options)

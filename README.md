@@ -98,6 +98,9 @@ Typing quirks still apply: a lowercase chill sim stays lowercase, a hype sim sta
 - **Personality:** a Tone of Normal, Emotional (open about crushes, love, jealousy and hurt) or Edgy
   (also blunt, sarcastic, petty, swears). A reroll catches replies that dodge you with
   "anyway, let's focus on the next raid" and asks for a real answer instead.
+- **People:** search any sim by name or personality to see their level and class, where they are,
+  their personality, the real person behind them, your friendship, their feelings and the summary.
+  From there you can show their memories, find them with the mist, or clear your recent chat.
 - **Guiding:** sims walk you there, walk you there with a mist trail, or (in the same zone) just
   conjure the mist. Also the pace, how far you can fall behind before they wait, whether they guide
   across zones, and the mist colour.
@@ -124,6 +127,13 @@ model with visible progress if needed, shows what the mod logged, and saves a re
 How characters are described to the AI, including a summary of Erenshor's lore drawn from the
 game itself, lives in `ai.txt`.
 
+
+**Real people behind the keyboard.** Every sim is played by someone with a real life: an age, a job,
+where they live, hobbies and a quirk ("works nights at a warehouse, into horror movies and their dog").
+It's built from the sim's name, so it never changes, and the lists are in `ai.txt` under `[ai.life.*]`.
+When you talk about something other than the game, the game details (zone lore, actions) are left
+out and sims talk as themselves: their day, opinions and life. If one drags raids or loot into a
+real-life chat anyway, the reply is rerolled.
 ## A living world
 
 Sims and NPCs now *do* things, not just say things. Actions appear in chat as emotes

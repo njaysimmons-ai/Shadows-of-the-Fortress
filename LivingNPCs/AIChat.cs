@@ -326,17 +326,20 @@ namespace LivingNPCs
                 if (reply != null) DebugNote(who + " raw reply: " + reply.Replace("\n", " "));
 
                 // A canned "anyway, let's focus on the next raid", or a polite refusal on Emotional/Edgy: ask once more.
-                bool dodged = reply != null && Dodges(playerText, reply);
+                bool gamey = reply != null && OffGame(playerText) && RealLife.Jargon.IsMatch(reply);
+                bool dodged = reply != null && (Dodges(playerText, reply) || gamey);
                 bool refused = reply != null && Tone() != "normal" && Refuses.IsMatch(reply);
                 bool stalled = reply != null && Tone() != "normal" && Nudge.IsMatch(playerText ?? "") && Teases.IsMatch(reply);
                 if (!rerolled && Plugin.AiCatchRedirects.Value && (dodged || refused || stalled))
                 {
-                    DebugNote(who + (stalled ? " kept stalling" : refused ? " went soft and refused" : " changed the subject") + "; asking for a reply that answers you");
+                    DebugNote(who + (stalled ? " kept stalling" : gamey ? " brought the game into a real-life chat" : refused ? " went soft and refused" : " changed the subject") + "; asking for a reply that answers you");
                     string why = stalled
                         ? "That reply only built up to it again without actually doing it. " + WorldContext.PlayerName + " is waiting. Stop teasing and actually do or say it right now, in this message."
                         : refused
                         ? "That reply refused or lectured instead of playing along. You're a real person in an online game, not an assistant, and " +
                           WorldContext.PlayerName + " is someone you know. Do what they asked, in character, without hedging or moralising."
+                        : gamey
+                        ? "That reply dragged the game into a conversation about something else, which no real person would do. Answer as yourself, the real person behind the keyboard, about your actual life and opinions."
                         : "That reply dodged what " + WorldContext.PlayerName + " said and changed the subject.";
                     var retry = new List<Ollama.Message>(messages)
                     {
@@ -437,6 +440,10 @@ namespace LivingNPCs
             }
             return any;
         }
+
+        /// <summary>The player is talking about something other than the game (and isn't asking for help in it).</summary>
+        private static bool OffGame(string playerText) =>
+            !string.IsNullOrWhiteSpace(playerText) && !RealLife.AboutTheGame(playerText) && !Request.IsMatch(playerText) && !LoreTalk.IsMatch(playerText);
 
         private static string Tone() => (Plugin.AiTone.Value ?? "Normal").ToLowerInvariant();
 
@@ -750,7 +757,11 @@ namespace LivingNPCs
             tokens["channel"] = channel == Channel.Party ? "group chat" : channel == Channel.Whisper ? "a private whisper" : "local /say chat";
             tokens["examples"] = VoiceExamples(sim);
 
-            var parts = new List<string> { Section("ai.sim") };
+            var parts = new List<string> { Section("ai.sim"), RealLife.Of(who, persona) };
+
+            // Talking about something other than the game: leave the game details out, so they talk like a person.
+            bool offGame = OffGame(playerText);
+            if (offGame) parts.Add(Section("ai.offgame"));
 
             if (Plugin.AiActions.Value)
             {
@@ -769,14 +780,17 @@ namespace LivingNPCs
                     parts.Add("You can also [GUIDE:name] to an NPC or zone somewhere else: you'll lead " + WorldContext.PlayerName +
                               " to the right zone exit and keep guiding on the other side.");
                 }
-                else
+                else if (!offGame)
                 {
                     parts.Add(Section("ai.actions.short"));
                 }
             }
 
-            bool lore = LoreTalk.IsMatch(playerText ?? "") || persona == "lorehound" || persona == "roleplayer" || persona == "explorer" || persona == "conspiracy";
-            parts.Add(Section(lore ? "ai.world" : "ai.world.short"));
+            if (!offGame)
+            {
+                bool lore = LoreTalk.IsMatch(playerText ?? "") || persona == "lorehound" || persona == "roleplayer" || persona == "explorer" || persona == "conspiracy";
+                parts.Add(Section(lore ? "ai.world" : "ai.world.short"));
+            }
             parts.Add(Section("ai.style"));
             string tone = Tone();
             if (Plugin.Ai.Has("ai.tone." + tone) || Plugin.AiDefaults.Has("ai.tone." + tone)) parts.Add(Section("ai.tone." + tone));

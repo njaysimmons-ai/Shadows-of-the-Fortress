@@ -203,7 +203,7 @@ namespace LivingNPCs
             }
         }
 
-        private static void ShowMemories(string name)
+        internal static void ShowMemories(string name)
         {
             if (string.IsNullOrEmpty(name))
             {
@@ -220,6 +220,13 @@ namespace LivingNPCs
             Friendship f = friends.Get(key);
             bool guildmate = key.StartsWith("sim:") && FriendshipEvents.IsGuildmate(name);
             UpdateSocialLog.LogAdd(name + " (" + Friendships.TierNames[Friendships.TierOf(f.Points)] + (guildmate ? ", guildmate" : "") + ") remembers:", "#7FD1AE");
+            SimPlayerTracking who = FriendshipEvents.Tracking(name);
+            if (who != null)
+            {
+                string persona = (who.MyAvatar != null ? SimVoices.PersonaOf(who.MyAvatar) : null) ?? WorldIndex.PersonaOf(who.SimName);
+                if (persona != null) UpdateSocialLog.LogAdd("  Personality: " + persona + " (" + SimVoices.AboutOf(persona) + ")", "#7FD1AE");
+                UpdateSocialLog.LogAdd("  The real person: " + RealLife.Of(who.SimName, persona).Replace("Outside the game you're a real person: ", ""), "#7FD1AE");
+            }
             if (!string.IsNullOrEmpty(f.Summary)) UpdateSocialLog.LogAdd("  In short: " + f.Summary, "#7FD1AE");
             string feel = Feelings.Describe(f);
             if (feel.Length > 0) UpdateSocialLog.LogAdd("  Feelings: " + feel.Replace("them", "you").Replace("they", "you"), "#7FD1AE");

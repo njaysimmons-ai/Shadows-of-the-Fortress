@@ -259,6 +259,7 @@ namespace LivingNPCs
             }
 
             Assigned[language] = persona;
+            WorldIndex.NotePersona(name, persona.Id);
             if (Plugin.LogSimPersonas.Value)
             {
                 Plugin.Log.LogInfo("Sim " + name + " is " + persona.Id +
@@ -267,7 +268,7 @@ namespace LivingNPCs
             }
         }
 
-        private static bool IsPremade(string name)
+        internal static bool IsPremade(string name)
         {
             var premades = GameData.SimMngr != null ? GameData.SimMngr.ActualSims : null;
             if (premades == null) return false;

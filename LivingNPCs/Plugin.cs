@@ -13,7 +13,7 @@ namespace LivingNPCs
     public class Plugin : BaseUnityPlugin
     {
         public const string Guid = "njaysimmons.erenshor.livingnpcs";
-        public const string Version = "0.8.2";
+        public const string Version = "0.9.0";
 
         internal static ManualLogSource Log;
         internal static DialogueBank Bank;
@@ -201,6 +201,7 @@ namespace LivingNPCs
         internal void ReloadFromKey()
         {
             LoadDialogue();
+            RealLife.Reset();
             UpdateSocialLog.LogAdd("Living NPCs: reloaded " + Bank.LineCount + " NPC lines and " + SimVoices.PersonaCount +
                                    " sim personas. Personas apply to sims as they next spawn.", "yellow");
         }
