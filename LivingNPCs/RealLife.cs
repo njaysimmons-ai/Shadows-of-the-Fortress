@@ -5,9 +5,12 @@ using System.Text.RegularExpressions;
 namespace LivingNPCs
 {
     /// <summary>
-    /// The person behind each sim: an age, a job, where they live, hobbies and a quirk, picked from the
-    /// sim's name so they're the same every session. Lets sims talk about real life like real players,
-    /// instead of only the game. The lists live in ai.txt ([ai.life.*]) and can be edited.
+    /// The person behind each sim: age, gender, what they do (school, work or retirement), where they
+    /// live, hobbies and a quirk, picked from the sim's name so they're the same every session. Lets sims
+    /// talk about real life like real players, instead of only the game. The lists live in ai.txt
+    /// ([ai.people.*]) and can be edited.
+    ///
+    /// Players under 18 never flirt and never develop romantic feelings, whatever their persona or tone.
     /// </summary>
     internal static class RealLife
     {
@@ -26,39 +29,104 @@ namespace LivingNPCs
 
         public static bool AboutTheGame(string text) => GameTalk.IsMatch(text ?? "");
 
-        private static readonly Dictionary<string, string> Cache = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        public class Person
+        {
+            public int Age;
+            public string Gender;       // "man", "woman" or "nonbinary"
+            public string Life;         // "a nurse who works long shifts", "in seventh grade"
+            public string Place;        // "in the suburbs"
+            public string Hobby1, Hobby2;
+            public string Quirk;
+
+            public bool Minor => Age < 18;
+
+            public string Noun => Age < 13 ? (Gender == "man" ? "boy" : Gender == "woman" ? "girl" : "kid")
+                                : Age < 18 ? (Gender == "man" ? "teenage boy" : Gender == "woman" ? "teenage girl" : "teenager")
+                                : Gender == "nonbinary" ? "nonbinary person" : Gender;
+
+            public string AgeGroup => Age < 14 ? "Kids (10-13)" : Age < 18 ? "Teens (14-17)" : Age < 30 ? "18-29" : Age < 45 ? "30-44" : Age < 60 ? "45-59" : "60+";
+
+            /// <summary>"34-year-old woman, a nurse who works long shifts, living in the suburbs. Into hiking and true crime podcasts. Always tired from work."</summary>
+            public string Summary =>
+                Age + "-year-old " + Noun + ", " + Life + ", living " + Place + ". Into " + Hobby1 + " and " + Hobby2 + "." +
+                (string.IsNullOrEmpty(Quirk) ? "" : " " + Char.ToUpperInvariant(Quirk[0]) + Quirk.Substring(1) + ".");
+        }
+
+        private static readonly Dictionary<string, Person> Cache = new Dictionary<string, Person>(StringComparer.OrdinalIgnoreCase);
 
         public static void Reset() => Cache.Clear();
 
-        /// <summary>One or two sentences about who this sim is outside the game.</summary>
+        /// <summary>For the AI prompt: who this sim is outside the game, plus the under-18 rules when they apply.</summary>
         public static string Of(string name, string persona)
         {
-            if (string.IsNullOrEmpty(name)) return "";
-            if (Cache.TryGetValue(name, out string cached)) return cached;
-            uint h = Hash(name);
-            int age = Age(persona, ref h);
-            string job = Pick("ai.life.jobs" + (age <= 23 ? ".young" : ""), ref h) ?? Pick("ai.life.jobs", ref h) ?? "works an ordinary job";
-            string place = Pick("ai.life.places", ref h) ?? "in a small town";
-            string hobby1 = Pick("ai.life.hobbies", ref h) ?? "music";
-            string hobby2 = Pick("ai.life.hobbies", ref h) ?? "cooking";
-            if (hobby2 == hobby1) hobby2 = Pick("ai.life.hobbies", ref h) ?? "movies";
-            string quirk = Pick("ai.life.quirks", ref h);
-            string text = "Outside the game you're a real person: " + age + " years old, you " + job + " and live " + place +
-                          ". You're into " + hobby1 + " and " + hobby2 + "." + (quirk != null ? " " + Char.ToUpperInvariant(quirk[0]) + quirk.Substring(1) + "." : "");
-            Cache[name] = text;
-            return text;
+            Person p = PersonOf(name, persona);
+            if (p == null) return "";
+            string text = "Outside the game you're a real person: a " + p.Summary.Replace(". Into ", ". You're into ") +
+                          " Your pronouns are " + (p.Gender == "man" ? "he/him" : p.Gender == "woman" ? "she/her" : "they/them") + ".";
+            return p.Minor ? text + " " + MinorRules(p) : text;
         }
 
-        private static int Age(string persona, ref uint h)
+        public static string MinorRules(Person p) =>
+            "You're only " + p.Age + ", so talk like a " + (p.Age < 13 ? "kid" : "teenager") + " your age. You never flirt, and anything romantic or sexual is completely off-limits: " +
+            "if {player} goes there, you get weirded out and shut it down the way a real " + (p.Age < 13 ? "kid" : "teen") + " would.";
+
+        public static bool IsMinor(string name) => PersonOf(name, null)?.Minor ?? false;
+
+        /// <summary>The person behind a sim. The persona is looked up if not given.</summary>
+        public static Person PersonOf(string name, string persona)
         {
-            int lo = 21, hi = 38;
-            switch (persona)
-            {
-                case "newbie": case "hype": case "drama": case "lootgoblin": lo = 19; hi = 25; break;
-                case "oldschool": case "mentor": lo = 34; hi = 52; break;
-                case "grump": lo = 28; hi = 48; break;
-            }
+            if (string.IsNullOrEmpty(name)) return null;
+            if (persona != null && Cache.TryGetValue(name + "|" + persona, out Person known)) return known;
+            SimPlayerTracking t = FriendshipEvents.Tracking(name);
+            persona = persona ?? (t?.MyAvatar != null ? SimVoices.PersonaOf(t.MyAvatar) : null) ?? WorldIndex.PersonaOf(name);
+            string cacheKey = name + "|" + persona;
+            if (Cache.TryGetValue(cacheKey, out Person cached)) return cached;
+
+            uint h = Hash(name);
+            var p = new Person { Age = Age(ref h) };
+            // Some personas only make sense for adults: the old-timer, the mentor and the flirt.
+            if (persona == "oldschool" || persona == "mentor") p.Age = Math.Max(p.Age, 30 + p.Age % 25);
+            if (persona == "charmer") p.Age = Math.Max(p.Age, 19 + p.Age % 20);
+            p.Gender = Gender(t?.Gender, ref h);
+
+            string stage = p.Age < 14 ? "kid" : p.Age < 18 ? "teen" : p.Age < 23 ? "young" : p.Age >= 65 ? "retired" : "adult";
+            if (stage == "young" && Next(ref h) % 10 < 3) stage = "adult";
+            if (p.Age >= 60 && p.Age < 65 && Next(ref h) % 10 < 3) stage = "retired";
+            p.Life = Pick("ai.people.life." + stage, ref h) ?? Pick("ai.people.life.adult", ref h) ?? "working an ordinary job";
+            bool youngster = stage == "kid" || stage == "teen";
+            p.Place = Pick(youngster ? "ai.people.places.family" : "ai.people.places", ref h) ?? "in a small town";
+            string hobbies = youngster ? "ai.people.hobbies.young" : "ai.people.hobbies";
+            p.Hobby1 = Pick(hobbies, ref h) ?? "music";
+            p.Hobby2 = Pick(hobbies, ref h) ?? "movies";
+            for (int i = 0; i < 3 && p.Hobby2 == p.Hobby1; i++) p.Hobby2 = Pick(hobbies, ref h) ?? "movies";
+            p.Quirk = Pick(youngster ? "ai.people.quirks.young" : stage == "retired" ? "ai.people.quirks.retired" : "ai.people.quirks", ref h)
+                      ?? Pick("ai.people.quirks", ref h);
+            Cache[cacheKey] = p;
+            return p;
+        }
+
+        // Roughly who plays online games: mostly adults, some teens and kids, a few retirees.
+        private static int Age(ref uint h)
+        {
+            uint roll = Next(ref h) % 100;
+            int lo, hi;
+            if (roll < 6) { lo = 10; hi = 13; }
+            else if (roll < 16) { lo = 14; hi = 17; }
+            else if (roll < 50) { lo = 18; hi = 29; }
+            else if (roll < 78) { lo = 30; hi = 44; }
+            else if (roll < 92) { lo = 45; hi = 59; }
+            else { lo = 60; hi = 70; }
             return lo + (int)(Next(ref h) % (uint)(hi - lo + 1));
+        }
+
+        // Most people play their own gender; some don't, and a few are nonbinary.
+        private static string Gender(string character, ref uint h)
+        {
+            uint roll = Next(ref h) % 100;
+            bool male = character == null ? Next(ref h) % 2 == 0 : character == "Male";
+            if (roll < 5) return "nonbinary";
+            if (roll < 18) male = !male;
+            return male ? "man" : "woman";
         }
 
         private static string Pick(string section, ref uint h)
@@ -73,7 +141,7 @@ namespace LivingNPCs
         {
             uint h = 2166136261;
             foreach (char c in s.ToLowerInvariant()) h = (h ^ c) * 16777619;
-            return h;
+            return h == 0 ? 1u : h;
         }
 
         private static uint Next(ref uint h)

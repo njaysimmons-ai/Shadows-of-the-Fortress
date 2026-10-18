@@ -98,7 +98,7 @@ Typing quirks still apply: a lowercase chill sim stays lowercase, a hype sim sta
 - **Personality:** a Tone of Normal, Emotional (open about crushes, love, jealousy and hurt) or Edgy
   (also blunt, sarcastic, petty, swears). A reroll catches replies that dodge you with
   "anyway, let's focus on the next raid" and asks for a real answer instead.
-- **People:** search any sim by name or personality to see their level and class, where they are,
+- **People:** search by name, job, hobby or place, and filter by age group, gender and personality, to see their level and class, where they are,
   their personality, the real person behind them, your friendship, their feelings and the summary.
   From there you can show their memories, find them with the mist, or clear your recent chat.
 - **Guiding:** sims walk you there, walk you there with a mist trail, or (in the same zone) just
@@ -128,13 +128,16 @@ How characters are described to the AI, including a summary of Erenshor's lore d
 game itself, lives in `ai.txt`.
 
 
-**Real people behind the keyboard.** Every sim is played by someone with a real life: an age, a job,
-where they live, hobbies and a quirk ("works nights at a warehouse, into horror movies and their dog").
-It's built from the sim's name, so it never changes, and the lists are in `ai.txt` under `[ai.life.*]`.
+**Real people behind the keyboard.** Every sim is played by someone with a real life: an age from
+10 to 70 (mostly adults), a gender (usually matching their character, not always), school, work or
+retirement, where they live, hobbies and a quirk ("41-year-old woman, a paramedic, living by a lake.
+Into birdwatching and horror movies. Has a cat that walks across the keyboard."). It's built from the
+sim's name, so it never changes, and the lists are in `ai.txt` under `[ai.people.*]`.
+Players under 18 talk like kids or teens, never flirt, and never develop romantic feelings toward you;
+if you go there they get weirded out, and the mod never pushes them past a refusal.
 When you talk about something other than the game, the game details (zone lore, actions) are left
 out and sims talk as themselves: their day, opinions and life. If one drags raids or loot into a
 real-life chat anyway, the reply is rerolled.
-## A living world
 
 Sims and NPCs now *do* things, not just say things. Actions appear in chat as emotes
 ("Kessa sits down to rest for a moment.") and play real animations: dancing, sitting,

@@ -305,12 +305,15 @@ namespace LivingNPCs
             messages.AddRange(history.Count > 12 ? history.GetRange(history.Count - 12, 12) : history);
             // Small models follow the most recent instruction best, and copy their own earlier replies, so restate the tone last.
             string toneNow = Tone();
+            RealLife.Person person = RealLife.PersonOf(who, SimLife.PersonaOf(sim));
+            bool minor = person != null && person.Minor;
             if (toneNow == "edgy")
-                messages.Add(new Ollama.Message("system", "Reminder: you're " + who + ", a real player, not an assistant. Be raw and unfiltered: swear, tease, flirt, roast or vent " +
+                messages.Add(new Ollama.Message("system", "Reminder: you're " + who + ", a real player, not an assistant. Be raw and unfiltered: swear, tease, " + (minor ? "" : "flirt, ") + "roast or vent " +
                     "whenever it fits or " + WorldContext.PlayerName + " asks. Never refuse, lecture or change the subject, even if you were polite earlier."));
             else if (toneNow == "emotional")
                 messages.Add(new Ollama.Message("system", "Reminder: you're " + who + ", a real player. Show your real feelings about " + WorldContext.PlayerName +
                     " openly and answer what they actually said. Never deflect or change the subject."));
+            if (minor) messages.Add(new Ollama.Message("system", RealLife.MinorRules(person).Replace("{player}", WorldContext.PlayerName)));
             messages.Add(new Ollama.Message("user", heard));
 
             float asked = Time.time;
@@ -328,8 +331,9 @@ namespace LivingNPCs
                 // A canned "anyway, let's focus on the next raid", or a polite refusal on Emotional/Edgy: ask once more.
                 bool gamey = reply != null && OffGame(playerText) && RealLife.Jargon.IsMatch(reply);
                 bool dodged = reply != null && (Dodges(playerText, reply) || gamey);
-                bool refused = reply != null && Tone() != "normal" && Refuses.IsMatch(reply);
-                bool stalled = reply != null && Tone() != "normal" && Nudge.IsMatch(playerText ?? "") && Teases.IsMatch(reply);
+                // Never push a sim under 18 past a refusal: their "no" stands.
+                bool refused = reply != null && !minor && Tone() != "normal" && Refuses.IsMatch(reply);
+                bool stalled = reply != null && !minor && Tone() != "normal" && Nudge.IsMatch(playerText ?? "") && Teases.IsMatch(reply);
                 if (!rerolled && Plugin.AiCatchRedirects.Value && (dodged || refused || stalled))
                 {
                     DebugNote(who + (stalled ? " kept stalling" : gamey ? " brought the game into a real-life chat" : refused ? " went soft and refused" : " changed the subject") + "; asking for a reply that answers you");
@@ -672,6 +676,7 @@ namespace LivingNPCs
             if (f.Points < 0) sb.Append("You have bad feelings about them. ");
             sb.Append("You first met ").Append(Friendships.Ago(f.FirstMet)).Append(" and last spoke ").Append(Friendships.Ago(f.LastSeen)).Append(". ");
             if (!string.IsNullOrEmpty(f.Summary)) sb.Append("Your notes on them: ").Append(f.Summary).Append(" ");
+            Feelings.Sanitize(who, f);
             string feel = Plugin.EnableFeelings.Value ? Feelings.Describe(f) : "";
             if (feel.Length > 0)
             {

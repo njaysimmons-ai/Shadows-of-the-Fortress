@@ -33,6 +33,8 @@ namespace LivingNPCs
         private static readonly Dictionary<string, FieldInfo> LanguageLists = new Dictionary<string, FieldInfo>(StringComparer.OrdinalIgnoreCase);
         private static readonly Dictionary<SimPlayerLanguage, Persona> Assigned = new Dictionary<SimPlayerLanguage, Persona>();
         private static List<Persona> personas = new List<Persona>();
+
+        public static List<string> PersonaIds => personas.ConvertAll(p => p.Id);
         private static Dictionary<string, string> overrides = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private static DialogueBank bank = new DialogueBank();
 

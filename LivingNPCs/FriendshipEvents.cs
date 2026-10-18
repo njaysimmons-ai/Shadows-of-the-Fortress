@@ -225,9 +225,11 @@ namespace LivingNPCs
             {
                 string persona = (who.MyAvatar != null ? SimVoices.PersonaOf(who.MyAvatar) : null) ?? WorldIndex.PersonaOf(who.SimName);
                 if (persona != null) UpdateSocialLog.LogAdd("  Personality: " + persona + " (" + SimVoices.AboutOf(persona) + ")", "#7FD1AE");
-                UpdateSocialLog.LogAdd("  The real person: " + RealLife.Of(who.SimName, persona).Replace("Outside the game you're a real person: ", ""), "#7FD1AE");
+                RealLife.Person person = RealLife.PersonOf(who.SimName, persona);
+                if (person != null) UpdateSocialLog.LogAdd("  The real person: " + person.Summary, "#7FD1AE");
             }
             if (!string.IsNullOrEmpty(f.Summary)) UpdateSocialLog.LogAdd("  In short: " + f.Summary, "#7FD1AE");
+            Feelings.Sanitize(name, f);
             string feel = Feelings.Describe(f);
             if (feel.Length > 0) UpdateSocialLog.LogAdd("  Feelings: " + feel.Replace("them", "you").Replace("they", "you"), "#7FD1AE");
             foreach (string kind in new[] { "fact", "plan", "milestone", "event" })

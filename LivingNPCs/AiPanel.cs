@@ -329,16 +329,39 @@ namespace LivingNPCs
 
         private string search = "";
         private string chosen;
+        private int ageFilter, genderFilter, personaFilter;
+        private bool showFilters = true;
+        private static readonly string[] AgeFilters = { "Any age", "Kids (10-13)", "Teens (14-17)", "18-29", "30-44", "45-59", "60+" };
+        private static readonly string[] GenderFilters = { "Anyone", "Men", "Women", "Nonbinary" };
+        private static readonly string[] GenderValues = { null, "man", "woman", "nonbinary" };
 
         private void PeopleTab()
         {
             GUILayout.Label("People", header);
-            GUILayout.Label("Search any sim to see the real person behind them, their personality and how they feel about you.", small);
+            GUILayout.Label("Search names, jobs, hobbies or places (try \"nurse\", \"guitar\", \"school\"), or filter below.", small);
             GUILayout.BeginHorizontal();
             GUILayout.Label("Search:", label, GUILayout.Width(56));
             search = GUILayout.TextField(search ?? "", 40, GUILayout.Height(26));
-            if (GUILayout.Button("Clear", normal, GUILayout.Width(60), GUILayout.Height(26))) { search = ""; GUIUtility.keyboardControl = 0; }
+            if (GUILayout.Button("Clear", normal, GUILayout.Width(60), GUILayout.Height(26)))
+            {
+                search = "";
+                ageFilter = genderFilter = personaFilter = 0;
+                GUIUtility.keyboardControl = 0;
+            }
+            if (GUILayout.Button(showFilters ? "Hide filters" : "Filters", normal, GUILayout.Width(96), GUILayout.Height(26))) showFilters = !showFilters;
             GUILayout.EndHorizontal();
+            List<string> personaNames = new List<string> { "Any personality" };
+            personaNames.AddRange(SimVoices.PersonaIds);
+            if (personaFilter >= personaNames.Count) personaFilter = 0;
+            if (showFilters)
+            {
+                GUILayout.Label("Age", small);
+                ageFilter = GUILayout.SelectionGrid(ageFilter, AgeFilters, 4, normal, GUILayout.MinHeight(52));
+                GUILayout.Label("Gender", small);
+                genderFilter = GUILayout.SelectionGrid(genderFilter, GenderFilters, 4, normal, GUILayout.Height(26));
+                GUILayout.Label("Personality (shows once you've seen them in game)", small);
+                personaFilter = GUILayout.SelectionGrid(personaFilter, personaNames.ToArray(), 4, normal);
+            }
             GUILayout.Space(4);
 
             if (chosen != null) Card(chosen);
@@ -354,19 +377,34 @@ namespace LivingNPCs
             foreach (var pair in friends.All) if (pair.Key.StartsWith("sim:")) points[Friendships.NameOf(pair.Key)] = pair.Value.Points;
 
             string wanted = (search ?? "").Trim();
-            var list = sims.Where(t => t != null && !string.IsNullOrEmpty(t.SimName) &&
-                                      (wanted.Length == 0 || t.SimName.IndexOf(wanted, StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                       (PersonaFor(t) ?? "").IndexOf(wanted, StringComparison.OrdinalIgnoreCase) >= 0))
+            string wantPersona = personaFilter > 0 ? personaNames[personaFilter] : null;
+            string wantGender = GenderValues[genderFilter];
+            string wantAge = ageFilter > 0 ? AgeFilters[ageFilter] : null;
+            var list = sims.Where(t =>
+                {
+                    if (t == null || string.IsNullOrEmpty(t.SimName)) return false;
+                    string persona = PersonaFor(t);
+                    if (wantPersona != null && persona != wantPersona) return false;
+                    RealLife.Person person = RealLife.PersonOf(t.SimName, persona);
+                    if (wantGender != null && (person == null || person.Gender != wantGender)) return false;
+                    if (wantAge != null && (person == null || person.AgeGroup != wantAge)) return false;
+                    return wanted.Length == 0 || t.SimName.IndexOf(wanted, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                           (persona ?? "").IndexOf(wanted, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                           (person != null && person.Summary.IndexOf(wanted, StringComparison.OrdinalIgnoreCase) >= 0);
+                })
                 .OrderByDescending(t => points.TryGetValue(t.SimName, out float pt) ? pt : -1f)
                 .ThenBy(t => t.SimName).Take(40).ToList();
-            GUILayout.Label(list.Count == 0 ? "Nobody matches." : wanted.Length == 0 ? "People you know best first. Click a name for details." : list.Count + " found:", small);
+            bool filtering = wanted.Length > 0 || wantPersona != null || wantGender != null || wantAge != null;
+            GUILayout.Label(list.Count == 0 ? "Nobody matches." : !filtering ? "People you know best first. Click a name for details." : list.Count + (list.Count == 40 ? "+" : "") + " found:", small);
             foreach (SimPlayerTracking t in list)
             {
                 float pt = points.TryGetValue(t.SimName, out float v) ? v : 0f;
                 string persona = PersonaFor(t);
+                RealLife.Person person = RealLife.PersonOf(t.SimName, persona);
                 string text = "<b>" + t.SimName + "</b>  <color=#9AA0A6>lvl " + t.Level + " " + t.ClassName +
-                              (persona != null ? ", " + persona : "") + (pt > 0f ? ", " + Friendships.TierNames[Friendships.TierOf(pt)] : "") + "</color>";
-                if (GUILayout.Button(text, t.SimName == chosen ? selected : normal, GUILayout.Height(26)))
+                              (persona != null ? ", " + persona : "") + (pt > 0f ? ", " + Friendships.TierNames[Friendships.TierOf(pt)] : "") + "</color>" +
+                              (person != null ? "\n<size=11><color=#C9C2B0>" + person.Age + ", " + person.Gender + ", " + person.Life + "</color></size>" : "");
+                if (GUILayout.Button(text, t.SimName == chosen ? selected : normal, GUILayout.MinHeight(40)))
                 {
                     chosen = t.SimName == chosen ? null : t.SimName;
                     scroll = Vector2.zero;
@@ -398,11 +436,13 @@ namespace LivingNPCs
                 GUILayout.Label("<b>Personality:</b> " + persona + ". " + SimVoices.AboutOf(persona), label);
             else
                 GUILayout.Label("<b>Personality:</b> " + (SimVoices.IsPremade(name) ? "one of the game's hand-made sims, with their own voice." : "not known yet; it shows once you've seen them."), label);
-            GUILayout.Label("<b>The real person:</b> " + RealLife.Of(name, persona).Replace("Outside the game you're a real person: ", ""), label);
+            RealLife.Person person = RealLife.PersonOf(name, persona);
+            if (person != null) GUILayout.Label("<b>The real person:</b> " + person.Summary, label);
             if (f != null && f.Points > 0f)
             {
                 GUILayout.Label("<b>Friendship:</b> " + Friendships.TierNames[Friendships.TierOf(f.Points)] + " (" + (int)f.Points + "), met " + Friendships.Ago(f.FirstMet) +
                                 ", " + f.Memories.Count + " memories", label);
+                Feelings.Sanitize(name, f);
                 string feel = Feelings.Describe(f);
                 if (!string.IsNullOrEmpty(feel)) GUILayout.Label("<b>Feelings:</b> " + feel.Replace("them", "you").Replace("they", "you"), label);
                 if (!string.IsNullOrEmpty(f.Summary)) GUILayout.Label("<b>In short:</b> " + f.Summary, label);

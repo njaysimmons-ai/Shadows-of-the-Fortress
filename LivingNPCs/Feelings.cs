@@ -52,6 +52,8 @@ namespace LivingNPCs
         public static void Shift(string simName, string feeling, float amount)
         {
             if (!FriendshipEvents.On || !Plugin.EnableFeelings.Value || amount == 0f || Array.IndexOf(Names, feeling) < 0) return;
+            // Players under 18 never develop romantic feelings.
+            if (feeling == "attraction" && RealLife.IsMinor(simName)) return;
             Friendships friends = Plugin.FriendsNow();
             string key = Friendships.Sim(simName);
             Friendship f = friends.Get(key);
@@ -125,7 +127,18 @@ namespace LivingNPCs
             if (!FriendshipEvents.On || !Plugin.EnableFeelings.Value) return null;
             Friendships friends = Plugin.FriendsNow();
             string key = Friendships.Sim(simName);
-            return friends.Knows(key) ? Strongest(friends.Get(key)) : null;
+            if (!friends.Knows(key)) return null;
+            Friendship f = friends.Get(key);
+            Sanitize(simName, f);
+            return Strongest(f);
+        }
+
+        /// <summary>Clears any attraction a sim under 18 might have from older saves, before it's shown or used.</summary>
+        public static void Sanitize(string simName, Friendship f)
+        {
+            if (f == null || !f.Feelings.TryGetValue("attraction", out float a) || a <= 0f || !RealLife.IsMinor(simName)) return;
+            f.Feelings["attraction"] = 0f;
+            Plugin.FriendsNow().MarkDirty();
         }
 
         /// <summary>Plain-language feelings for the AI prompt and /memories.</summary>
