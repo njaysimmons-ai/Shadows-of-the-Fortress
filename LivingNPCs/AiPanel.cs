@@ -407,6 +407,9 @@ namespace LivingNPCs
                 if (GUILayout.Button(text, t.SimName == chosen ? selected : normal, GUILayout.MinHeight(40)))
                 {
                     chosen = t.SimName == chosen ? null : t.SimName;
+                    editing = false;
+                    draft = null;
+                    notes = null;
                     scroll = Vector2.zero;
                 }
             }
@@ -437,7 +440,12 @@ namespace LivingNPCs
             else
                 GUILayout.Label("<b>Personality:</b> " + (SimVoices.IsPremade(name) ? "one of the game's hand-made sims, with their own voice." : "not known yet; it shows once you've seen them."), label);
             RealLife.Person person = RealLife.PersonOf(name, persona);
-            if (person != null) GUILayout.Label("<b>The real person:</b> " + person.Summary, label);
+            if (person != null && GUILayout.Button("<b>The real person:</b> " + person.Summary + (editing ? "" : "  <color=#9AA0A6><size=11>(click to edit)</size></color>"), label) && !editing)
+            {
+                editing = true;
+                notes = null;
+                draft = null;
+            }
             if (f != null && f.Points > 0f)
             {
                 GUILayout.Label("<b>Friendship:</b> " + Friendships.TierNames[Friendships.TierOf(f.Points)] + " (" + (int)f.Points + "), met " + Friendships.Ago(f.FirstMet) +
@@ -445,7 +453,12 @@ namespace LivingNPCs
                 Feelings.Sanitize(name, f);
                 string feel = Feelings.Describe(f);
                 if (!string.IsNullOrEmpty(feel)) GUILayout.Label("<b>Feelings:</b> " + feel.Replace("them", "you").Replace("they", "you"), label);
-                if (!string.IsNullOrEmpty(f.Summary)) GUILayout.Label("<b>In short:</b> " + f.Summary, label);
+                if (!string.IsNullOrEmpty(f.Summary) && GUILayout.Button("<b>In short:</b> " + f.Summary, label) && !editing)
+                {
+                    editing = true;
+                    notes = null;
+                    draft = null;
+                }
             }
             else GUILayout.Label("<b>Friendship:</b> you haven't really met yet.", label);
             GUILayout.BeginHorizontal();
@@ -460,6 +473,7 @@ namespace LivingNPCs
             {
                 editing = !editing;
                 notes = null;
+                draft = null;
             }
             if (GUILayout.Button("Close", normal, GUILayout.Width(60), GUILayout.Height(26))) { chosen = null; editing = false; }
             GUILayout.EndHorizontal();
@@ -482,6 +496,7 @@ namespace LivingNPCs
             GUILayout.Space(6);
             GUILayout.Label("Edit " + name, header);
             GUILayout.Label("Changes save straight away. Feelings still drift slowly with time and with how you treat them.", small);
+            BackgroundEditor(name, persona, person);
 
             GUILayout.Label("<b>Presets</b>", label);
             GUILayout.BeginHorizontal();
@@ -549,6 +564,75 @@ namespace LivingNPCs
             }
             if (GUILayout.Button("Undo", normal, GUILayout.Height(26))) { notes = null; GUIUtility.keyboardControl = 0; }
             GUILayout.EndHorizontal();
+        }
+
+        private Dictionary<string, string> draft;
+        private string draftFor;
+
+        /// <summary>Rewrite who they are in real life. Saved edits replace the generated background.</summary>
+        private void BackgroundEditor(string name, string persona, RealLife.Person person)
+        {
+            if (person == null) return;
+            if (draft == null || draftFor != name)
+            {
+                draftFor = name;
+                draft = new Dictionary<string, string>
+                {
+                    ["age"] = person.Age.ToString(), ["gender"] = person.Gender, ["life"] = person.Life, ["place"] = person.Place,
+                    ["hobbies"] = person.Hobbies ?? "", ["quirk"] = person.Quirk ?? "", ["extra"] = person.Extra ?? "",
+                };
+            }
+            GUILayout.Space(4);
+            GUILayout.Label("<b>The real person</b>" + (person.Edited ? "  <color=#9AA0A6>(your version)</color>" : ""), label);
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Age", label, GUILayout.Width(110));
+            draft["age"] = GUILayout.TextField(draft["age"], 2, GUILayout.Width(50), GUILayout.Height(24));
+            GUILayout.Space(12);
+            foreach (string g in new[] { "man", "woman", "nonbinary" })
+            {
+                if (GUILayout.Button(g, draft["gender"] == g ? selected : normal, GUILayout.Height(24))) draft["gender"] = g;
+            }
+            GUILayout.EndHorizontal();
+            Field("School / job", "life", "a nurse who works long shifts");
+            Field("Lives", "place", "in the suburbs, with a partner");
+            Field("Into", "hobbies", "hiking and horror movies");
+            Field("Quirk", "quirk", "always has snacks by the keyboard");
+            GUILayout.Label("More about them (family, history, secrets... anything the AI should know)", small);
+            draft["extra"] = GUILayout.TextArea(draft["extra"], 800, GUILayout.MinHeight(54));
+
+            bool validAge = int.TryParse(draft["age"], out int age) && age >= 10 && age <= 99;
+            if (!validAge) GUILayout.Label("<color=#F2C94C>Age must be a number from 10 to 99.</color>", small);
+            else if (age < 18) GUILayout.Label("Under 18: they'll never flirt or develop romantic feelings.", small);
+            GUILayout.BeginHorizontal();
+            GUI.enabled = validAge;
+            if (GUILayout.Button("Save background", normal, GUILayout.Height(26)))
+            {
+                RealLife.SetEdits(name, draft.ToDictionary(p => p.Key, p => p.Value.Trim()));
+                Feelings.Sanitize(name, Plugin.FriendsNow().Get(Friendships.Sim(name)));
+                draft = null;
+                GUIUtility.keyboardControl = 0;
+            }
+            GUI.enabled = true;
+            if (GUILayout.Button("Undo changes", normal, GUILayout.Height(26))) { draft = null; GUIUtility.keyboardControl = 0; }
+            GUI.enabled = person.Edited;
+            if (GUILayout.Button("Back to original", normal, GUILayout.Height(26)))
+            {
+                RealLife.SetEdits(name, null);
+                draft = null;
+                GUIUtility.keyboardControl = 0;
+            }
+            GUI.enabled = true;
+            GUILayout.EndHorizontal();
+            GUILayout.Space(6);
+        }
+
+        private void Field(string title, string key, string example)
+        {
+            GUILayout.BeginHorizontal();
+            GUILayout.Label(title, label, GUILayout.Width(110));
+            draft[key] = GUILayout.TextField(draft[key] ?? "", 200, GUILayout.Height(24), GUILayout.MinWidth(250));
+            GUILayout.EndHorizontal();
+            if (string.IsNullOrEmpty(draft[key])) GUILayout.Label("e.g. " + example, small);
         }
 
         private static void Preset(Friendship f, float points, float affection, float attraction, float respect, float trust, float envy, float resentment)

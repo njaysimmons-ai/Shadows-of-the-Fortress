@@ -35,8 +35,10 @@ namespace LivingNPCs
             public string Gender;       // "man", "woman" or "nonbinary"
             public string Life;         // "a nurse who works long shifts", "in seventh grade"
             public string Place;        // "in the suburbs"
-            public string Hobby1, Hobby2;
+            public string Hobbies;      // "hiking and true crime podcasts"
             public string Quirk;
+            public string Extra;        // anything you wrote yourself in the /ai panel
+            public bool Edited;
 
             public bool Minor => Age < 18;
 
@@ -48,8 +50,18 @@ namespace LivingNPCs
 
             /// <summary>"34-year-old woman, a nurse who works long shifts, living in the suburbs. Into hiking and true crime podcasts. Always tired from work."</summary>
             public string Summary =>
-                Age + "-year-old " + Noun + ", " + Life + ", living " + Place + ". Into " + Hobby1 + " and " + Hobby2 + "." +
-                (string.IsNullOrEmpty(Quirk) ? "" : " " + Char.ToUpperInvariant(Quirk[0]) + Quirk.Substring(1) + ".");
+                Age + "-year-old " + Noun + ", " + Life + ", living " + Place + "." +
+                (string.IsNullOrEmpty(Hobbies) ? "" : " Into " + Hobbies + ".") +
+                (string.IsNullOrEmpty(Quirk) ? "" : " " + Sentence(Quirk)) +
+                (string.IsNullOrEmpty(Extra) ? "" : " " + Sentence(Extra));
+        }
+
+        private static string Sentence(string s)
+        {
+            s = s.Trim();
+            if (s.Length == 0) return "";
+            s = Char.ToUpperInvariant(s[0]) + s.Substring(1);
+            return ".!?".IndexOf(s[s.Length - 1]) >= 0 ? s : s + ".";
         }
 
         private static readonly Dictionary<string, Person> Cache = new Dictionary<string, Person>(StringComparer.OrdinalIgnoreCase);
@@ -96,13 +108,70 @@ namespace LivingNPCs
             bool youngster = stage == "kid" || stage == "teen";
             p.Place = Pick(youngster ? "ai.people.places.family" : "ai.people.places", ref h) ?? "in a small town";
             string hobbies = youngster ? "ai.people.hobbies.young" : "ai.people.hobbies";
-            p.Hobby1 = Pick(hobbies, ref h) ?? "music";
-            p.Hobby2 = Pick(hobbies, ref h) ?? "movies";
-            for (int i = 0; i < 3 && p.Hobby2 == p.Hobby1; i++) p.Hobby2 = Pick(hobbies, ref h) ?? "movies";
+            string hobby1 = Pick(hobbies, ref h) ?? "music";
+            string hobby2 = Pick(hobbies, ref h) ?? "movies";
+            for (int i = 0; i < 3 && hobby2 == hobby1; i++) hobby2 = Pick(hobbies, ref h) ?? "movies";
+            p.Hobbies = hobby1 + " and " + hobby2;
             p.Quirk = Pick(youngster ? "ai.people.quirks.young" : stage == "retired" ? "ai.people.quirks.retired" : "ai.people.quirks", ref h)
                       ?? Pick("ai.people.quirks", ref h);
+            ApplyEdits(name, p);
             Cache[cacheKey] = p;
             return p;
+        }
+
+        // ---------------------------------------------------------------- your edits (the /ai panel)
+
+        public static readonly string[] Fields = { "age", "gender", "life", "place", "hobbies", "quirk", "extra" };
+        private static readonly Dictionary<string, Dictionary<string, string>> Edits = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
+        private static string editsPath;
+
+        private static void ApplyEdits(string name, Person p)
+        {
+            if (!Edits.TryGetValue(name, out var e) || e.Count == 0) return;
+            p.Edited = true;
+            if (e.TryGetValue("age", out string age) && int.TryParse(age, out int a)) p.Age = Math.Max(10, Math.Min(99, a));
+            if (e.TryGetValue("gender", out string g) && (g == "man" || g == "woman" || g == "nonbinary")) p.Gender = g;
+            if (e.TryGetValue("life", out string life)) p.Life = life;
+            if (e.TryGetValue("place", out string place)) p.Place = place;
+            if (e.TryGetValue("hobbies", out string hobbies)) p.Hobbies = hobbies;
+            if (e.TryGetValue("quirk", out string quirk)) p.Quirk = quirk;
+            if (e.TryGetValue("extra", out string extra)) p.Extra = extra;
+        }
+
+        /// <summary>Saves your version of a sim's background. Pass null to go back to the generated one.</summary>
+        public static void SetEdits(string name, Dictionary<string, string> fields)
+        {
+            if (fields == null || fields.Count == 0) Edits.Remove(name);
+            else Edits[name] = new Dictionary<string, string>(fields);
+            Reset();
+            SaveEdits();
+        }
+
+        public static void LoadEdits(string folder)
+        {
+            editsPath = System.IO.Path.Combine(folder, "people.tsv");
+            Edits.Clear();
+            if (!System.IO.File.Exists(editsPath)) return;
+            foreach (string line in System.IO.File.ReadAllLines(editsPath))
+            {
+                string[] p = line.Split('\t');
+                if (p.Length < 3) continue;
+                if (!Edits.TryGetValue(p[0], out var e)) Edits[p[0]] = e = new Dictionary<string, string>();
+                e[p[1]] = p[2].Replace("\\n", " ");
+            }
+            Reset();
+        }
+
+        private static void SaveEdits()
+        {
+            if (editsPath == null) return;
+            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(editsPath));
+            var lines = new List<string>();
+            foreach (var person in Edits)
+                foreach (var field in person.Value)
+                    lines.Add(person.Key + "\t" + field.Key + "\t" + (field.Value ?? "").Replace("\t", " ").Replace("\r", " ").Replace("\n", " "));
+            try { System.IO.File.WriteAllLines(editsPath, lines); }
+            catch (Exception e) { Plugin.Log.LogError("Couldn't save people.tsv: " + e.Message); }
         }
 
         // Roughly who plays online games: mostly adults, some teens and kids, a few retirees.

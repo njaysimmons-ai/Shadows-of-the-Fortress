@@ -13,7 +13,7 @@ namespace LivingNPCs
     public class Plugin : BaseUnityPlugin
     {
         public const string Guid = "njaysimmons.erenshor.livingnpcs";
-        public const string Version = "0.11.0";
+        public const string Version = "0.12.0";
 
         internal static ManualLogSource Log;
         internal static DialogueBank Bank;
@@ -185,6 +185,7 @@ namespace LivingNPCs
             Bonds = new SimBonds(Path.Combine(folder, "memory"));
             Friends = new Friendships(Path.Combine(folder, "memory"));
             WorldIndex.Load(Path.Combine(folder, "memory"));
+            RealLife.LoadEdits(Path.Combine(folder, "memory"));
             Friends.TierReached += FriendshipEvents.OnTierReached;
             Friendships.IsGuildmate = key => key.StartsWith("guild:") ||
                                              (key.StartsWith("sim:") && FriendshipEvents.IsGuildmate(Friendships.NameOf(key)));
