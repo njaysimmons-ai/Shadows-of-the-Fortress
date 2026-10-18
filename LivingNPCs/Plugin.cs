@@ -13,7 +13,7 @@ namespace LivingNPCs
     public class Plugin : BaseUnityPlugin
     {
         public const string Guid = "njaysimmons.erenshor.livingnpcs";
-        public const string Version = "0.7.0";
+        public const string Version = "0.8.0";
 
         internal static ManualLogSource Log;
         internal static DialogueBank Bank;
@@ -68,6 +68,15 @@ namespace LivingNPCs
         internal static ConfigEntry<float> AiOverhearChance;
         internal static ConfigEntry<float> AiNearbyRadius;
         internal static ConfigEntry<bool> AiActions;
+        internal static ConfigEntry<string> AiThinkingModel;
+        internal static ConfigEntry<string> AiTone;
+        internal static ConfigEntry<bool> AiCatchRedirects;
+        internal static ConfigEntry<string> GuideStyle;
+        internal static ConfigEntry<string> GuidePace;
+        internal static ConfigEntry<bool> GuideAcrossZones;
+        internal static ConfigEntry<float> GuideWaitDistance;
+        internal static ConfigEntry<string> MistColor;
+        internal static ConfigEntry<KeyboardShortcut> PanelKey;
         internal static ConfigEntry<bool> EnableFriendships;
         internal static ConfigEntry<float> FriendshipSpeed;
         internal static ConfigEntry<float> FriendshipDailyCap;
@@ -77,6 +86,14 @@ namespace LivingNPCs
         internal static ConfigEntry<float> FeelingsSpeed;
         internal static ConfigEntry<bool> BaldOption;
         internal static ConfigEntry<KeyboardShortcut> ReloadKey;
+
+        /// <summary>The model for behind-the-scenes work: the thinking model if one is set and working, else the chat model.</summary>
+        internal static string BrainModel =>
+            !string.IsNullOrWhiteSpace(AiThinkingModel.Value) && Ollama.BrainOk ? AiThinkingModel.Value.Trim() : AiModel.Value;
+
+        internal static bool TwoModels => BrainModel != AiModel.Value;
+
+        internal static float GuidePaceFactor => GuidePace.Value == "Slow" ? 0.55f : GuidePace.Value == "Fast" ? 1f : 0.85f;
 
         private string dialoguePath;
         private string simsPath;
@@ -126,6 +143,14 @@ namespace LivingNPCs
             AiActions = Config.Bind("AI Chat", "SimsActOnWhatTheySay", true, "Sims do what they agree to in AI chat: join your group, meet you in a zone, come find you, leave, or emote.");
             AiNearbyRadius = Config.Bind("AI Chat", "NearbyAnswerRadius", 6f, "If you talk without targeting anyone, the closest sim within this many metres answers. 0 turns it off.");
             AiOverhearChance = Config.Bind("AI Chat", "OverhearChance", 0.35f, "Chance (0-1) a nearby sim answers a question you ask out loud without naming anyone.");
+            AiThinkingModel = Config.Bind("AI Chat", "ThinkingModel", "",
+                "Optional second model for the behind-the-scenes work: deciding what sims do (guide, join, buff...) and writing their memories. " +
+                "Leave empty to use Model for everything. A sharp, small model such as qwen2.5:7b works well here, so Model can be a livelier one like dolphin3:8b.");
+            AiTone = Config.Bind("AI Chat", "Tone", "Normal", new ConfigDescription(
+                "How openly sims show feelings. Normal: friendly MMO chat. Emotional: open about crushes, love, jealousy and hurt. Edgy: also blunt, sarcastic, petty and willing to swear.",
+                new AcceptableValueList<string>("Normal", "Emotional", "Edgy")));
+            AiCatchRedirects = Config.Bind("AI Chat", "RerollChangedSubjects", true,
+                "If a sim dodges what you said with a generic \"anyway, let's focus on the next raid\", ask the AI once more for a reply that actually answers you.");
 
             EnableFriendships = Config.Bind("Friendships", "Enabled", true, "Sims and NPCs build lasting friendships with each of your characters and remember what you've done and said together.");
             FriendshipSpeed = Config.Bind("Friendships", "Speed", 1f, "Multiplier on how fast friendships grow (and shrink).");
@@ -134,6 +159,16 @@ namespace LivingNPCs
             EnableFeelings = Config.Bind("Friendships", "EvolvingFeelings", true, "Sims develop feelings about you over time (affection, attraction, respect, trust, envy, resentment) from what you say and do: they can fall for you, envy you or come to hate you.");
             FeelingsSpeed = Config.Bind("Friendships", "FeelingsSpeed", 1f, "Multiplier on how fast feelings change.");
             FriendshipAnnounce = Config.Bind("Friendships", "AnnounceNewTiers", true, "Show a message when you and someone become Friends, Good Friends, and so on.");
+
+            GuideStyle = Config.Bind("Guiding", "Style", "Walk", new ConfigDescription(
+                "How sims show you the way. Walk: the sim walks you there. WalkAndMist: the sim walks you there and a mist trail marks the path. Mist: in the same zone, the sim conjures a mist trail instead of walking (other zones still get walked to the exit).",
+                new AcceptableValueList<string>("Walk", "WalkAndMist", "Mist")));
+            GuidePace = Config.Bind("Guiding", "Pace", "Normal", new ConfigDescription("How fast a guiding sim moves.", new AcceptableValueList<string>("Slow", "Normal", "Fast")));
+            GuideAcrossZones = Config.Bind("Guiding", "AcrossZones", true, "Sims may guide you through zone lines to an NPC or zone somewhere else.");
+            GuideWaitDistance = Config.Bind("Guiding", "WaitIfYouFallBehind", 14f, "A guiding sim stops and waits when you're this many metres behind. 0 means never wait.");
+            MistColor = Config.Bind("Guiding", "MistColor", "Blue", new ConfigDescription("Colour of the /find and guiding mist.",
+                new AcceptableValueList<string>("Blue", "Gold", "Green", "Violet", "White", "Red")));
+            PanelKey = Config.Bind("General", "PanelKey", new KeyboardShortcut(KeyCode.F9, KeyCode.LeftControl), "Opens the Living NPCs panel (the same as typing /ai).");
 
             BaldOption = Config.Bind("Appearance", "BaldHairstyle", true, "Adds a Bald hairstyle at the end of the character creation hair choices, and the /hair command.");
 

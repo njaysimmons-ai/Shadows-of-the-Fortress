@@ -82,17 +82,28 @@ namespace LivingNPCs
         /// Makes sure the server is running and the model is downloaded, launching Ollama and pulling
         /// the model if allowed. Reports progress as chat messages via <paramref name="status"/>.
         /// </summary>
+        /// <summary>False when the thinking model failed to download or load, so the chat model does its work instead.</summary>
+        public static volatile bool BrainOk = true;
+
         public static void Prepare(Action<string> status, Action<bool> ready)
         {
             string model = Plugin.AiModel.Value;
+            string brain = (Plugin.AiThinkingModel.Value ?? "").Trim();
             if (!LooksLikeModel(model))
             {
-                LastError = "the model is set to '" + model + "', which isn't a model name. Type /ai model qwen2.5:14b (or llama3.1:8b, llama3.2:3b) to fix it";
+                LastError = "the model is set to '" + model + "', which isn't a model name. Type /ai and pick one, or /ai model qwen2.5:14b";
                 Phase = "waiting for a valid model name";
                 Completed.Enqueue(() => status("Living NPCs: " + LastError + "."));
                 Completed.Enqueue(() => ready(false));
                 return;
             }
+            bool wantBrain = brain.Length > 0 && brain != model;
+            if (wantBrain && !LooksLikeModel(brain))
+            {
+                Completed.Enqueue(() => status("Living NPCs: the thinking model '" + brain + "' isn't a model name, so " + model + " will do everything."));
+                wantBrain = false;
+            }
+            BrainOk = true;
             bool autoStart = Plugin.AiAutoStart.Value;
             bool autoPull = Plugin.AiAutoDownload.Value;
             Background(() =>
@@ -117,49 +128,89 @@ namespace LivingNPCs
                     Post(() => ready(false));
                     return;
                 }
-                if (!HasModel(model))
+                string problem = Install(model, autoPull, status);
+                if (problem != null)
                 {
-                    if (!autoPull)
-                    {
-                        LastError = "model '" + model + "' isn't downloaded";
-                        Post(status, "Living NPCs: the AI model '" + model + "' isn't downloaded. Run: ollama pull " + model);
-                        Post(() => ready(false));
-                        return;
-                    }
-                    Phase = "downloading " + model;
-                    Post(status, "Living NPCs: downloading the AI model '" + model + "' (one time only, it's several GB). Type /ai to see progress.");
-                    try
-                    {
-                        Pull(model, status);
-                    }
-                    catch (Exception e)
-                    {
-                        LastError = "couldn't download model '" + model + "': " + e.Message;
-                        Phase = "download failed (will retry in a minute)";
-                        Post(status, "Living NPCs: couldn't download the AI model: " + e.Message);
-                        Post(() => ready(false));
-                        return;
-                    }
-                }
-                // Load the model into video memory now, so the first real reply isn't slow.
-                Phase = "loading " + model + " into video memory";
-                try
-                {
-                    Http("POST", "/api/generate", "{\"model\":" + Json.Quote(model) + ",\"prompt\":\"hi\",\"stream\":false,\"keep_alive\":\"30m\",\"options\":{\"num_predict\":1}}", 180 * 1000);
-                }
-                catch (Exception e)
-                {
-                    LastError = "the model failed to load: " + e.Message;
-                    Phase = "model failed to load (will retry in a minute)";
-                    Post(status, "Living NPCs: the AI model '" + model + "' failed to load: " + e.Message);
+                    LastError = problem;
+                    Phase = "failed (will retry in a minute)";
+                    Post(status, "Living NPCs: " + problem);
                     Post(() => ready(false));
                     return;
                 }
+                if (wantBrain)
+                {
+                    string brainProblem = Install(brain, autoPull, status);
+                    if (brainProblem != null)
+                    {
+                        BrainOk = false;
+                        Post(status, "Living NPCs: " + brainProblem + ". " + model + " will do the thinking too for now.");
+                    }
+                }
                 LastError = "";
                 Phase = "ready";
-                Post(status, "Living NPCs: AI chat is ready (" + model + "). Talk to the sims!");
+                Post(status, "Living NPCs: AI chat is ready (" + model + (wantBrain && BrainOk ? ", thinking with " + brain : "") + "). Talk to the sims!");
                 Post(() => ready(true));
             });
+        }
+
+        /// <summary>Downloads a model if needed and loads it into video memory. Returns a problem, or null when it's ready.</summary>
+        private static string Install(string model, bool autoPull, Action<string> status)
+        {
+            if (!HasModel(model))
+            {
+                if (!autoPull) return "the AI model '" + model + "' isn't downloaded. Run: ollama pull " + model;
+                Phase = "downloading " + model;
+                Post(status, "Living NPCs: downloading the AI model '" + model + "' (one time only, it's several GB). Type /ai to see progress.");
+                try
+                {
+                    Pull(model, status);
+                }
+                catch (Exception e)
+                {
+                    return "couldn't download the AI model '" + model + "': " + e.Message;
+                }
+            }
+            // Load the model into video memory now, so the first real reply isn't slow.
+            Phase = "loading " + model + " into video memory";
+            try
+            {
+                Http("POST", "/api/generate", "{\"model\":" + Json.Quote(model) + ",\"prompt\":\"hi\",\"stream\":false,\"keep_alive\":\"30m\",\"options\":{\"num_predict\":1}}", 180 * 1000);
+            }
+            catch (Exception e)
+            {
+                return "the AI model '" + model + "' failed to load: " + e.Message;
+            }
+            return null;
+        }
+
+        public struct ModelInfo
+        {
+            public string Name;
+            public double Gb;
+        }
+
+        /// <summary>Downloaded models (/api/tags) and what's in video memory now (/api/ps), for the /ai panel. Runs done on the game thread.</summary>
+        public static void ListModels(Action<List<ModelInfo>, List<ModelInfo>> done)
+        {
+            Background(() =>
+            {
+                List<ModelInfo> installed = null, loaded = null;
+                try { installed = ParseModels(Http("GET", "/api/tags", null, 5000), "size"); } catch { }
+                try { loaded = ParseModels(Http("GET", "/api/ps", null, 5000), "size_vram"); } catch { }
+                Completed.Enqueue(() => done(installed, loaded));
+            });
+        }
+
+        private static List<ModelInfo> ParseModels(string json, string sizeKey)
+        {
+            var list = new List<ModelInfo>();
+            if (json == null) return list;
+            foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(json,
+                         "\"name\"\\s*:\\s*\"([^\"]+)\"" + (sizeKey == "size" ? "[^{}]*?" : "[\\s\\S]*?") + "\"" + sizeKey + "\"\\s*:\\s*(\\d+)"))
+            {
+                list.Add(new ModelInfo { Name = m.Groups[1].Value, Gb = double.Parse(m.Groups[2].Value, System.Globalization.CultureInfo.InvariantCulture) / 1e9 });
+            }
+            return list;
         }
 
         /// <summary>Downloads a model, streaming progress into <see cref="Phase"/> and a chat line every 25%.</summary>
@@ -290,12 +341,13 @@ namespace LivingNPCs
         // ---------------------------------------------------------------- chat
 
         /// <summary>Asks the model for one reply. <paramref name="done"/> runs on the game thread with null on failure.</summary>
-        public static void Chat(List<Message> messages, int maxTokens, Action<string> done)
+        public static void Chat(List<Message> messages, int maxTokens, Action<string> done, string model = null, float temperature = 0.85f)
         {
             var body = new StringBuilder();
-            body.Append("{\"model\":").Append(Json.Quote(Plugin.AiModel.Value));
+            body.Append("{\"model\":").Append(Json.Quote(model ?? Plugin.AiModel.Value));
             body.Append(",\"stream\":false,\"keep_alive\":\"30m\"");
-            body.Append(",\"options\":{\"temperature\":0.85,\"num_predict\":").Append(maxTokens).Append("}");
+            body.Append(",\"options\":{\"temperature\":").Append(temperature.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture))
+                .Append(",\"num_predict\":").Append(maxTokens).Append("}");
             body.Append(",\"messages\":[");
             for (int i = 0; i < messages.Count; i++)
             {

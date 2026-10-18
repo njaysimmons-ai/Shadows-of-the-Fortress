@@ -32,7 +32,7 @@ Every sim and NPC builds a long-term friendship with each of your characters, sa
   love, turn envious, resent you or come to hate you. Each persona feels things differently
   (a charmer falls fast, a braggart gets envious, a grump holds grudges), feelings fade slowly if
   nothing feeds them, and they change how the sim greets, reacts and talks to you.
-  `EnableFeelings` and `FeelingsSpeed` in the config control it.
+  `EvolvingFeelings` and `FeelingsSpeed` in the config control it.
 - `/friends` lists your closest bonds; `/memories Name` (or target someone and type `/memories`)
   shows what they remember and how they feel about you.
 
@@ -86,10 +86,27 @@ Messages about grouping, invites and trading are left to the game's own sims, so
 invite and trade handling isn't affected.
 Typing quirks still apply: a lowercase chill sim stays lowercase, a hype sim stays loud.
 
-**In game:** `/ai` shows status, `/ai off` and `/ai on` toggle it, `/ai model llama3.1:8b` switches model.
-On a strong graphics card, an 8B model (`llama3.1:8b`, `qwen2.5:7b`) gives noticeably better replies.
+**The /ai panel.** Type `/ai` (or press Ctrl+F9) to open a settings window. Changes save straight away.
 
-**If sims don't seem to use the AI:** type `/ai`. It says whether it's connected and what the last
+- **AI models:** pick the chat model (what sims say) and an optional thinking model. Installed models
+  are listed with their sizes, and so are recommended ones you don't have yet: they download the first
+  time you pick them. The panel also shows what's loaded in video memory right now.
+- **Two models:** the thinking model works behind the scenes. It decides what a sim does when you ask
+  for something (guide, join, buff...) and writes their memories. So you can chat with a lively model
+  like `dolphin3:8b` or `mistral-nemo` and keep actions and memories sharp with `qwen2.5:7b`.
+  Both stay loaded, so add their sizes together (about 10 GB for that pair).
+- **Personality:** a Tone of Normal, Emotional (open about crushes, love, jealousy and hurt) or Edgy
+  (also blunt, sarcastic, petty, swears). A reroll catches replies that dodge you with
+  "anyway, let's focus on the next raid" and asks for a real answer instead.
+- **Guiding:** sims walk you there, walk you there with a mist trail, or (in the same zone) just
+  conjure the mist. Also the pace, how far you can fall behind before they wait, whether they guide
+  across zones, and the mist colour.
+
+Chat commands still work: `/ai status`, `/ai on`, `/ai off`, `/ai test`, `/ai debug`,
+`/ai model mistral-nemo` (chat model) and `/ai model brain qwen2.5:7b` (thinking model; `brain same` turns it off).
+They're also in the config as `Model`, `ThinkingModel`, `Tone`, `RerollChangedSubjects` and the `[Guiding]` section.
+
+**If sims don't seem to use the AI:** type `/ai` (or `/ai status`). It says whether it's connected and what the last
 problem was, and while it's setting up, exactly what it's doing (downloading the model with a
 percentage, or loading it into video memory). `/ai test` sends a test message and shows the reply and how long it took. When you
 enter the world the mod also says whether AI chat is on, and if a reply fails it tells you why.

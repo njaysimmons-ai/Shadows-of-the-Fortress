@@ -41,7 +41,7 @@ namespace LivingNPCs
         {
             if (Debug) TryChat("[AI debug] " + text, "#9AA0A6");
         }
-        private static bool preparing;
+        private static bool preparing, reconnectAfter;
         private static int attempts;
         private static float nextRetry = 8f;
         private static bool announced;
@@ -96,10 +96,44 @@ namespace LivingNPCs
                 },
                 ok =>
                 {
-                    Ready = ok;
                     preparing = false;
+                    if (reconnectAfter)
+                    {
+                        // The model changed while connecting: start again with the new one.
+                        reconnectAfter = false;
+                        Prepare(quiet: false);
+                        return;
+                    }
+                    Ready = ok;
                     if (ok && attempts > 1 && announced) TryChat("Living NPCs: AI chat connected (" + Plugin.AiModel.Value + ").", "#7FD1AE");
                 });
+        }
+
+        /// <summary>Switches the chat model (downloading it if needed) and reconnects.</summary>
+        public static void SetChatModel(string name)
+        {
+            if (name == Plugin.AiModel.Value && Ready) return;
+            Plugin.AiModel.Value = name;
+            TryChat("Living NPCs: sims will now talk with " + name + ".", "yellow");
+            Reconnect();
+        }
+
+        /// <summary>Sets the thinking model ("" = the chat model does everything) and reconnects.</summary>
+        public static void SetThinkingModel(string name)
+        {
+            if (name == (Plugin.AiThinkingModel.Value ?? "").Trim()) return;
+            Plugin.AiThinkingModel.Value = name;
+            TryChat(name.Length == 0 ? "Living NPCs: " + Plugin.AiModel.Value + " now does the thinking too."
+                                     : "Living NPCs: " + name + " will decide what sims do and write their memories.", "yellow");
+            Reconnect();
+        }
+
+        private static void Reconnect()
+        {
+            if (!Plugin.AiEnabled.Value) return;
+            Ready = false;
+            if (preparing) { reconnectAfter = true; return; }
+            Prepare(quiet: false);
         }
 
         /// <summary>Chat messages sent before the chat window exists (main menu) would be lost or throw.</summary>
@@ -272,15 +306,32 @@ namespace LivingNPCs
             messages.Add(new Ollama.Message("user", heard));
 
             float asked = Time.time;
-            Ollama.Chat(messages, 70, reply =>
+            bool asking = Plugin.AiActions.Value && Request.IsMatch(playerText ?? "");
+
+            void Handle(string reply, bool rerolled)
             {
                 if (reply == null && Time.time - lastFailureNotice > 60f)
                 {
                     lastFailureNotice = Time.time;
                     TryChat("Living NPCs: " + who + " couldn't answer: " + Ollama.LastError + ". Type /ai test to check.", "yellow");
                 }
-                // Pull out any action the sim agreed to before tidying the text (tags can trail off the first line).
                 if (reply != null) DebugNote(who + " raw reply: " + reply.Replace("\n", " "));
+
+                // A canned "anyway, let's focus on the next raid" that ignores what you said: ask once more.
+                if (!rerolled && reply != null && Plugin.AiCatchRedirects.Value && Dodges(playerText, reply))
+                {
+                    DebugNote(who + " changed the subject; asking for a reply that answers you");
+                    var retry = new List<Ollama.Message>(messages)
+                    {
+                        new Ollama.Message("assistant", reply),
+                        new Ollama.Message("system", "That reply dodged what " + WorldContext.PlayerName + " said and changed the subject. " +
+                            "Write a new reply as " + who + " that responds directly to it, in your own voice and with your real feelings. Don't mention raids, grinding or plans."),
+                    };
+                    Ollama.Chat(retry, 70, r => Handle(r ?? reply, true));
+                    return;
+                }
+
+                // Pull out any action the sim agreed to before tidying the text (tags can trail off the first line).
                 reply = SimActions.Extract(reply, out string action, out string argument);
                 if ((action == "GUIDE" || action == "MEET") && argument == null)
                 {
@@ -293,7 +344,10 @@ namespace LivingNPCs
                 }
                 reply = Clean(reply, who, SimLife.PersonaOf(sim) != "roleplayer");
                 if (string.IsNullOrEmpty(reply)) return;
-                string remembered = action == null ? reply : reply + " [" + action + (argument != null ? ":" + argument : "") + "]";
+
+                // With a separate thinking model, it decides what the sim actually does; the chat model's guess is the fallback.
+                bool decideLater = asking && Plugin.TwoModels;
+                string remembered = action == null || decideLater ? reply : reply + " [" + action + (argument != null ? ":" + argument : "") + "]";
                 if (remember)
                 {
                     Friendships friends = Plugin.FriendsNow();
@@ -313,11 +367,72 @@ namespace LivingNPCs
 
                 // A short pause to "type", so replies don't arrive impossibly fast.
                 float typing = Mathf.Clamp(reply.Length * 0.035f - (Time.time - asked), 0.3f, 3f);
-                Scheduler.After(typing, () =>
+                float deliverAt = Time.time + typing;
+                Scheduler.After(typing, () => Deliver(who, sim, channel, reply));
+                void Act(string a, string arg)
                 {
-                    Deliver(who, sim, channel, reply);
-                    if (action != null) Scheduler.After(UnityEngine.Random.Range(1f, 2.5f), () => SimActions.Perform(who, sim, action, argument));
-                });
+                    if (a == null) return;
+                    float wait = Mathf.Max(0f, deliverAt - Time.time) + UnityEngine.Random.Range(1f, 2.5f);
+                    Scheduler.After(wait, () => SimActions.Perform(who, sim, a, arg));
+                }
+                if (decideLater) DecideAction(who, sim, playerText, reply, action, argument, Act);
+                else Act(action, argument);
+            }
+
+            Ollama.Chat(messages, 70, reply => Handle(reply, false));
+        }
+
+        // ================================================================ the thinking model
+
+        private static readonly Regex Dodge = new Regex(
+            @"\b(?:let'?s|lets|we should|we gotta|gotta|need to|time to)\s+(?:just\s+|all\s+)?(?:focus|concentrate|get back to|get ready|prepare|prep|gear up|plan)\b|" +
+            @"\b(?:the|our|next|upcoming|tonight'?s|big)\s+raid\b|\banyway?s?\b.{0,40}\b(?:raid|dungeon|grind|quest|hunt|level)",
+            RegexOptions.IgnoreCase);
+        private static readonly Regex OnTopic = new Regex(@"\b(raid|dungeon|grind|quest|hunt|plan|prepare|focus|level|xp|camp)\w*", RegexOptions.IgnoreCase);
+
+        /// <summary>True when a reply steers to raids or plans that the player never brought up.</summary>
+        private static bool Dodges(string playerText, string reply) =>
+            Dodge.IsMatch(reply) && !OnTopic.IsMatch(playerText ?? "");
+
+        /// <summary>
+        /// Asks the thinking model which action (if any) the sim just agreed to. Small instruction-following
+        /// models are far more reliable at this than at remembering tags mid-conversation.
+        /// </summary>
+        private static void DecideAction(string who, SimPlayer sim, string playerText, string reply, string fallback, string fallbackArg, Action<string, string> act)
+        {
+            SimPlayerTracking tracking = FriendshipEvents.Tracking(who);
+            bool sameZone = tracking != null && tracking.CurScene == WorldContext.Zone;
+            List<Spell> buffs = sameZone ? SimActions.BuffsFor(sim) : new List<Spell>();
+            string prompt =
+                "You decide what a character in the MMO Erenshor does after a chat message. Reply with exactly one tag and nothing else.\n" +
+                "Tags: [JOIN] join the player's group. [HELP] join to help with a fight. [COME] travel to the player. [MEET:zone] go wait at a zone's entrance. " +
+                "[GUIDE:place] lead the player to a place, NPC or zone. [FOLLOW] follow the player. [WAIT] stay put. " + (buffs.Count > 0 ? "[BUFF] cast buffs on the player. " : "") +
+                "[LEAVE] leave the group. [WAVE] [DANCE] [SIT] [CHEER] [BOW] [LAUGH] emotes. [NONE] nothing.\n" +
+                "Only pick an action if the character clearly agreed to do it now. If they refused, joked, or were unsure, answer [NONE].\n" +
+                "For GUIDE and MEET, use a name from these lists when one fits. " +
+                "Places here: " + (sameZone ? SimEscort.PlacesHere() : "(not in the same zone)") + ". Zones: " + SimActions.ZoneList() + ".";
+            var messages = new List<Ollama.Message>
+            {
+                new Ollama.Message("system", prompt),
+                new Ollama.Message("user", WorldContext.PlayerName + " said: " + playerText + "\n" + who + " replied: " + reply),
+            };
+            Ollama.Chat(messages, 24, model: Plugin.BrainModel, temperature: 0.1f, done: decision =>
+            {
+                if (decision == null)
+                {
+                    DebugNote("thinking model didn't answer; using the chat model's guess (" + (fallback ?? "nothing") + ")");
+                    act(fallback, fallbackArg);
+                    return;
+                }
+                DebugNote("thinking model decided: " + decision.Trim());
+                SimActions.Extract(decision, out string action, out string argument);
+                if (action == null)
+                {
+                    act(null, null);
+                    return;
+                }
+                if ((action == "GUIDE" || action == "MEET") && argument == null) argument = fallbackArg ?? SimActions.PlaceFromRequest(playerText);
+                act(action, argument);
             });
         }
 
@@ -413,7 +528,7 @@ namespace LivingNPCs
                     new Ollama.Message("system", Fill(prompt, tokens)),
                     new Ollama.Message("user", transcript.ToString()),
                 };
-                Ollama.Chat(messages, 120, result =>
+                Ollama.Chat(messages, 120, model: Plugin.BrainModel, temperature: 0.3f, done: result =>
                 {
                     if (string.IsNullOrWhiteSpace(result) || result.Trim().ToUpperInvariant().StartsWith("NONE")) return;
                     Friendships friends = Plugin.FriendsNow();
@@ -465,7 +580,7 @@ namespace LivingNPCs
                 new Ollama.Message("system", Fill(prompt, tokens)),
                 new Ollama.Message("user", "Current notes: " + (string.IsNullOrEmpty(f.Summary) ? "(none yet)" : f.Summary) + "\nNew memories:\n" + recent),
             };
-            Ollama.Chat(messages, 160, summary =>
+            Ollama.Chat(messages, 160, model: Plugin.BrainModel, temperature: 0.4f, done: summary =>
             {
                 if (string.IsNullOrWhiteSpace(summary)) return;
                 summary = summary.Trim().Trim('"');
@@ -611,6 +726,8 @@ namespace LivingNPCs
             bool lore = LoreTalk.IsMatch(playerText ?? "") || persona == "lorehound" || persona == "roleplayer" || persona == "explorer" || persona == "conspiracy";
             parts.Add(Section(lore ? "ai.world" : "ai.world.short"));
             parts.Add(Section("ai.style"));
+            string tone = (Plugin.AiTone.Value ?? "Normal").ToLowerInvariant();
+            if (Plugin.Ai.Has("ai.tone." + tone) || Plugin.AiDefaults.Has("ai.tone." + tone)) parts.Add(Section("ai.tone." + tone));
 
             string prompt = string.Join(" ", parts);
             return Fill(prompt, tokens);
@@ -752,27 +869,38 @@ namespace LivingNPCs
             }
             else if (arg.StartsWith("model "))
             {
-                string name = arg.Substring(6).Trim().ToLowerInvariant();
-                if (!Ollama.LooksLikeModel(name))
+                string rest = arg.Substring(6).Trim().ToLowerInvariant();
+                bool brain = rest.StartsWith("brain ") || rest.StartsWith("thinking ");
+                if (brain || rest.StartsWith("chat ")) rest = rest.Substring(rest.IndexOf(' ') + 1).Trim();
+                if (brain && (rest == "same" || rest == "none" || rest == "off"))
                 {
-                    UpdateSocialLog.LogAdd("'" + name + "' isn't a model name. Try /ai model qwen2.5:14b, llama3.1:8b or llama3.2:3b.", "yellow");
+                    AIChat.SetThinkingModel("");
                     return false;
                 }
-                Plugin.AiModel.Value = name;
-                UpdateSocialLog.LogAdd("Living NPCs: AI model set to " + Plugin.AiModel.Value + ".", "yellow");
-                AIChat.Prepare(quiet: false);
+                if (!Ollama.LooksLikeModel(rest))
+                {
+                    UpdateSocialLog.LogAdd("'" + rest + "' isn't a model name. Try /ai model qwen2.5:14b, or /ai model brain qwen2.5:7b.", "yellow");
+                    return false;
+                }
+                if (brain) AIChat.SetThinkingModel(rest);
+                else AIChat.SetChatModel(rest);
+            }
+            else if (arg == "" || arg == "panel" || arg == "settings")
+            {
+                AiPanel.Toggle();
             }
             else
             {
                 string state = !Plugin.AiEnabled.Value ? "OFF" : AIChat.Ready ? "ON and connected" : "ON but NOT connected";
-                UpdateSocialLog.LogAdd("Living NPCs AI chat: " + state + ". Model: " + Plugin.AiModel.Value + ", Ollama at " + Plugin.AiUrl.Value + ".", "yellow");
+                UpdateSocialLog.LogAdd("Living NPCs AI chat: " + state + ". Model: " + Plugin.AiModel.Value +
+                                       (Plugin.TwoModels ? ", thinking with " + Plugin.BrainModel : "") + ", Ollama at " + Plugin.AiUrl.Value + ".", "yellow");
                 if (Plugin.AiEnabled.Value && !AIChat.Ready) UpdateSocialLog.LogAdd("Right now: " + Ollama.Phase, "yellow");
                 bool looping = Host.LastBeat >= 0f && Time.realtimeSinceStartup - Host.LastBeat < 2f;
                 UpdateSocialLog.LogAdd("Mod update loop: " + (looping ? "running" : "NOT running (please report this)") +
                                        (Host.Starts > 1 ? ", restarted " + (Host.Starts - 1) + " times" : ""), looping ? "yellow" : "red");
                 if (!string.IsNullOrEmpty(Ollama.LastError)) UpdateSocialLog.LogAdd("Last problem: " + Ollama.LastError, "yellow");
                 UpdateSocialLog.LogAdd("To talk: target a sim (or stand next to one) and type; /p for your group; /w Name to whisper. NPCs keep their scripted dialogue.", "yellow");
-                UpdateSocialLog.LogAdd("Commands: /ai test, /ai debug, /ai on, /ai off, /ai model NAME", "yellow");
+                UpdateSocialLog.LogAdd("Commands: /ai (settings panel), /ai status, /ai test, /ai debug, /ai on, /ai off, /ai model NAME, /ai model brain NAME", "yellow");
             }
             return false;
         }

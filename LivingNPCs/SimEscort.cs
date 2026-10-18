@@ -80,6 +80,7 @@ namespace LivingNPCs
 
         private static void StartGuide(SimPlayer sim, Vector3 where, string name, Action<SimPlayer> onArrive)
         {
+            if (Plugin.GuideStyle.Value == "WalkAndMist" || Plugin.GuideStyle.Value == "Mist") MistTrail.BeginAt(where, name, quiet: true);
             Jobs[sim] = new Job
             {
                 Mode = Mode.Guide, Target = where, TargetName = name, OnArrive = onArrive, Until = Time.time + 8f * 60f,
@@ -318,10 +319,11 @@ namespace LivingNPCs
                         job.NextRepath = Time.time + 3f;
                         job.LastProgressTime = Time.time;
                         Vector3 nudge = job.Target + new Vector3(UnityEngine.Random.Range(-3f, 3f), 0f, UnityEngine.Random.Range(-3f, 3f));
-                        MoveTo(sim, nudge, run * 0.85f, force: true);
+                        MoveTo(sim, nudge, run * Plugin.GuidePaceFactor, force: true);
                         return true;
                     }
-                    if (Vector3.Distance(me, player) > 14f)
+                    float waitAt = Plugin.GuideWaitDistance.Value;
+                    if (waitAt > 0f && Vector3.Distance(me, player) > waitAt)
                     {
                         // Don't lose the person you're guiding.
                         Halt(sim);
@@ -337,7 +339,7 @@ namespace LivingNPCs
                     else
                     {
                         job.ToldToCatchUp = false;
-                        MoveTo(sim, job.Target, run * 0.85f);
+                        MoveTo(sim, job.Target, run * Plugin.GuidePaceFactor);
                     }
                     break;
             }

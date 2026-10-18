@@ -173,7 +173,22 @@ namespace LivingNPCs
                     case "GUIDE":
                         if (!here) { AIChat.DebugNote("can't guide: " + simName + " isn't in your zone"); break; }
                         Routes.RemoveAll(r => string.Equals(r.Sim, sim.name, StringComparison.OrdinalIgnoreCase));
+                        if (Plugin.GuideStyle.Value == "Mist" && SimEscort.FindPlace(argument, out Vector3 spot, out string spotName))
+                        {
+                            // Mist style: the sim points the way with a trail of mist instead of walking you there.
+                            AIChat.DebugNote("conjuring a mist trail to '" + spotName + "'");
+                            Speech.Face(sim, spot);
+                            Speech.Emote(sim.name, "gestures, and a trail of mist drifts toward " + spotName + ".");
+                            MistTrail.BeginAt(spot, spotName, quiet: true);
+                            break;
+                        }
                         if (SimEscort.Guide(sim, argument)) { AIChat.DebugNote("guiding to '" + argument + "' in this zone"); break; }
+                        if (!Plugin.GuideAcrossZones.Value)
+                        {
+                            AIChat.DebugNote("couldn't find '" + argument + "' here, and guiding across zones is off");
+                            Scheduler.After(1.5f, () => Speech.Say(sim, "hm, i don't think that's around here"));
+                            break;
+                        }
                         if (GuideElsewhere(sim, argument)) AIChat.DebugNote("guiding toward '" + argument + "' in another zone");
                         else
                         {

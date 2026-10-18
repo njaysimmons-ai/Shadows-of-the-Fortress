@@ -71,6 +71,34 @@ namespace LivingNPCs
             UpdateSocialLog.LogAdd("A pale mist gathers and drifts toward " + name + " (" + Mathf.RoundToInt(d) + "m). /find stop to dismiss it.", "#9FD8FF");
         }
 
+        /// <summary>Starts the mist toward a fixed spot (a sim guiding you uses this). Quiet skips the chat line.</summary>
+        public static void BeginAt(Vector3 point, string name, bool quiet)
+        {
+            if (GameData.PlayerControl == null) return;
+            targetTransform = null;
+            followingPerson = false;
+            targetPoint = point;
+            targetName = name;
+            active = true;
+            startedAt = Time.time;
+            startedScene = SceneManager.GetActiveScene().name;
+            if (instance != null) instance.nextPath = 0f;
+            if (!quiet) UpdateSocialLog.LogAdd("A pale mist drifts toward " + name + ".", "#9FD8FF");
+        }
+
+        private static Color Tint()
+        {
+            switch (Plugin.MistColor.Value)
+            {
+                case "Gold": return new Color(1f, 0.84f, 0.45f);
+                case "Green": return new Color(0.55f, 1f, 0.65f);
+                case "Violet": return new Color(0.8f, 0.6f, 1f);
+                case "White": return new Color(0.95f, 0.95f, 0.95f);
+                case "Red": return new Color(1f, 0.5f, 0.45f);
+                default: return new Color(0.72f, 0.86f, 1f);
+            }
+        }
+
         public static void Stop(string message = null)
         {
             bool was = active;
@@ -289,7 +317,9 @@ namespace LivingNPCs
                 if (cam != null) w.Go.transform.rotation = cam.transform.rotation;
                 float size = w.Size * (0.8f + 0.5f * t);
                 w.Go.transform.localScale = new Vector3(size, size, size);
-                w.Mat.color = new Color(0.72f, 0.86f, 1f, 0.42f * fade);
+                Color tint = Tint();
+                tint.a = 0.42f * fade;
+                w.Mat.color = tint;
             }
         }
 
