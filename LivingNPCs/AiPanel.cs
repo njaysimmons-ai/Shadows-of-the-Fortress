@@ -148,7 +148,7 @@ namespace LivingNPCs
         private void Draw(int id)
         {
             GUILayout.BeginHorizontal();
-            GUILayout.Label("Living NPCs", title);
+            GUILayout.Label("Living NPCs " + Plugin.Version, title);
             GUILayout.FlexibleSpace();
             if (GUILayout.Button("X", normal, GUILayout.Width(30), GUILayout.Height(26))) open = false;
             GUILayout.EndHorizontal();

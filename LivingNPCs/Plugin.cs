@@ -13,7 +13,7 @@ namespace LivingNPCs
     public class Plugin : BaseUnityPlugin
     {
         public const string Guid = "njaysimmons.erenshor.livingnpcs";
-        public const string Version = "0.9.0";
+        public const string Version = "0.9.1";
 
         internal static ManualLogSource Log;
         internal static DialogueBank Bank;
