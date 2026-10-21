@@ -239,6 +239,13 @@ and it keeps following them if they move. It works for NPCs and sims by name, or
 (`/find vendor`, `/find banker`, `/find exit`). `/find` on its own lists who's here (or follows
 your target), and `/find stop` dismisses the mist. It fades when you arrive or leave the zone.
 
+## Auto-loot
+
+Walk past corpses and any stackable item you already carry (reagents, ores, food...) goes straight
+into your stack, along with the gold, without opening the corpse. Gear and items you don't have yet
+are left for you to look at. Toggle it and set the range (5 to 35 metres) in the `/ai` panel's
+**Loot** tab, or in the config under `[Looting]`. It pauses while the loot window is open.
+
 ## Bald hairstyle
 
 Character creation's hairstyle arrows now include **Bald** after the last style (beards are

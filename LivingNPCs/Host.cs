@@ -30,6 +30,7 @@ namespace LivingNPCs
             root.AddComponent<AIChat>();
             root.AddComponent<MistTrail>();
             root.AddComponent<AiPanel>();
+            root.AddComponent<AutoLoot>();
             if (starts == 1) Plugin.Log.LogInfo("Living NPCs: update loop started.");
             else Plugin.Log.LogWarning("Living NPCs: the update loop was destroyed by the game and has been restarted (" + starts + " starts).");
         }

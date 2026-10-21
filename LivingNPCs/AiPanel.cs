@@ -160,6 +160,7 @@ namespace LivingNPCs
             if (GUILayout.Button("Personality", tab == 1 ? selected : normal, GUILayout.Height(28))) tab = 1;
             if (GUILayout.Button("Guiding", tab == 2 ? selected : normal, GUILayout.Height(28))) tab = 2;
             if (GUILayout.Button("People", tab == 3 ? selected : normal, GUILayout.Height(28))) tab = 3;
+            if (GUILayout.Button("Loot", tab == 4 ? selected : normal, GUILayout.Height(28))) tab = 4;
             GUILayout.EndHorizontal();
             GUILayout.Space(6);
 
@@ -167,7 +168,8 @@ namespace LivingNPCs
             if (tab == 0) ModelsTab();
             else if (tab == 1) PersonalityTab();
             else if (tab == 2) GuidingTab();
-            else PeopleTab();
+            else if (tab == 3) PeopleTab();
+            else LootTab();
             GUILayout.EndScrollView();
 
             GUILayout.Space(4);
@@ -648,6 +650,24 @@ namespace LivingNPCs
             float[] values = { affection, attraction, respect, trust, envy, resentment };
             for (int i = 0; i < Feelings.Names.Length; i++) f.Feelings[Feelings.Names[i]] = values[i];
             Plugin.FriendsNow().MarkDirty();
+        }
+
+        private static readonly float[] LootRadii = { 5f, 10f, 20f, 35f };
+
+        private void LootTab()
+        {
+            GUILayout.Label("Auto-loot", header);
+            Toggle(Plugin.AutoLootStacks, "Auto-loot items I already have a stack of",
+                "Walk past corpses and stackable items you already carry (reagents, ores, food...) go straight into your stacks. Gear and items you don't have yet stay on the corpse.");
+            Toggle(Plugin.AutoLootGold, "Auto-loot gold", "Pick up gold from nearby corpses too.");
+            GUILayout.Space(8);
+            GUILayout.Label("Range", header);
+            float r = Plugin.AutoLootRadius.Value;
+            int at = r <= 6f ? 0 : r <= 14f ? 1 : r <= 25f ? 2 : 3;
+            int picked = Choice(at, new[] { "Close (5m)", "Near (10m)", "Wide (20m)", "Far (35m)" });
+            if (picked != at) Plugin.AutoLootRadius.Value = LootRadii[picked];
+            GUILayout.Space(6);
+            GUILayout.Label("It pauses while the loot window is open, and stops if your bags or a stack are full.", small);
         }
 
         private int Choice(int current, string[] options)

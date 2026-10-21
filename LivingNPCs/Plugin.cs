@@ -13,7 +13,7 @@ namespace LivingNPCs
     public class Plugin : BaseUnityPlugin
     {
         public const string Guid = "njaysimmons.erenshor.livingnpcs";
-        public const string Version = "0.13.0";
+        public const string Version = "0.14.0";
 
         internal static ManualLogSource Log;
         internal static DialogueBank Bank;
@@ -78,6 +78,9 @@ namespace LivingNPCs
         internal static ConfigEntry<float> GuideWaitDistance;
         internal static ConfigEntry<string> MistColor;
         internal static ConfigEntry<KeyboardShortcut> PanelKey;
+        internal static ConfigEntry<bool> AutoLootStacks;
+        internal static ConfigEntry<bool> AutoLootGold;
+        internal static ConfigEntry<float> AutoLootRadius;
         internal static ConfigEntry<bool> EnableFriendships;
         internal static ConfigEntry<float> FriendshipSpeed;
         internal static ConfigEntry<float> FriendshipDailyCap;
@@ -176,6 +179,10 @@ namespace LivingNPCs
             GuideWaitDistance = Config.Bind("Guiding", "WaitIfYouFallBehind", 14f, "A guiding sim stops and waits when you're this many metres behind. 0 means never wait.");
             MistColor = Config.Bind("Guiding", "MistColor", "Blue", new ConfigDescription("Colour of the /find and guiding mist.",
                 new AcceptableValueList<string>("Blue", "Gold", "Green", "Violet", "White", "Red")));
+            AutoLootStacks = Config.Bind("Looting", "AutoLootStacks", true,
+                "Automatically pick up items you already have a stack of from corpses near you, without opening them. Gear and new items stay on the corpse.");
+            AutoLootGold = Config.Bind("Looting", "AutoLootGold", true, "Also pick up gold from nearby corpses automatically.");
+            AutoLootRadius = Config.Bind("Looting", "Radius", 10f, "How close (in metres) a corpse must be to auto-loot it.");
             PanelKey = Config.Bind("General", "PanelKey", new KeyboardShortcut(KeyCode.F9, KeyCode.LeftControl), "Opens the Living NPCs panel (the same as typing /ai).");
 
             BaldOption = Config.Bind("Appearance", "BaldHairstyle", true, "Adds a Bald hairstyle at the end of the character creation hair choices, and the /hair command.");
